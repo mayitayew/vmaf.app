@@ -13,12 +13,13 @@ Module().then(module => {
 onmessage = function(e) {
     console.log("Webworker called");
     console.log("Received message. Vmaf version is " + ffModule.getVmafVersion());
-    const f = e.data[0];
+    const reference_file = e.data[0];
+    const test_file = e.data[1];
 
-    ffModule.FS.mkdir('/wjzm');
-    ffModule.FS.mount(ffModule.WORKERFS, {files: [f]}, '/wjzm');
+    ffModule.FS.mkdir('/videos');
+    ffModule.FS.mount(ffModule.WORKERFS, {files: [reference_file, test_file]}, '/videos');
     if (e.data.length > 0) {
-        console.log("File is ", f.name);
-        ffModule.computeVmaf('/wjzm/' + f.name, '/wjzm/' + f.name);
+        console.log("File is ", reference_file.name);
+        ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name);
     }
 }

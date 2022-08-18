@@ -62,7 +62,7 @@ const Inputs = () => {
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
         if (state.referenceVideoFile !== null) {
-            workerRef.current.postMessage([state.referenceVideoFile])
+            workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile])
         }
     }, [state])
 
@@ -191,6 +191,11 @@ const VideoCanvas = () => {
 
 const VmafGraph = () => {
 
+
+
+    return (
+        <canvas id="myChart" width="400" height="400"></canvas>
+    )
 }
 
 export default function Landing() {
@@ -262,6 +267,7 @@ export default function Landing() {
                 <Grid container style={innerContainerStyle} direction="column" justifyContent="center"
                       alignItems="center">
                     {/*<VideoCanvas/>*/}
+                    <VmafGraph/>
                     <Inputs/>
                 </Grid>
             </Container>
