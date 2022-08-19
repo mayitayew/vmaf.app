@@ -23,10 +23,10 @@ class VmafScoresBuffer {
     _allocateHeap() {
         const dataByteSize = this._length * BYTES_PER_SAMPLE;
         this._dataPtr = this._module._malloc(dataByteSize);
-        let startOffset = this._dataPtr;
+        let startOffset = this._dataPtr / BYTES_PER_SAMPLE;
         let endOffset = startOffset + this._length;
         this._scoredata =
-            this._module.HEAPU8.subarray(startOffset, endOffset);
+            this._module.HEAPF32.subarray(startOffset, endOffset);
     }
 
     /**
@@ -41,7 +41,6 @@ class VmafScoresBuffer {
     /**
      * Returns the reference to the array of score data.
      *
-     * @param  {number|undefined} channelIndex Channel index.
      * @return {?Array} a channel data array or an
      * array of channel data.
      */
@@ -65,5 +64,7 @@ class VmafScoresBuffer {
         this._isInitialized = false;
         this._module._free(this._dataPtr);
     }
-};
+}
+
+export default VmafScoresBuffer;
 

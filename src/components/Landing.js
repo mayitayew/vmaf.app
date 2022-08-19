@@ -11,7 +11,68 @@ import FunctionsTwoToneIcon from '@mui/icons-material/FunctionsTwoTone';
 import {LoadingButton} from '@mui/lab';
 import logo from '../assets/logo.png';
 import theme from "./Theme";
-import {grey} from "@mui/material/colors";
+import {green, grey, red} from "@mui/material/colors";
+
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import {Line} from 'react-chartjs-2';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+);
+
+const graphOptions = {
+    responsive: true,
+    scales:{
+        x: {
+            display: false //this will remove all the x-axis grid lines
+        }
+    },
+    plugins: {
+        title: {
+            display: true,
+            text: 'Graph',
+        },
+    },
+};
+
+const data = (vmafScores) => {
+    vmafScores = vmafScores.slice(0, 90);
+    const labels = vmafScores.map(function(elem, index) {
+       return index;
+    });
+    return {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Frame Vmaf Score',
+                data: vmafScores.map((x) => x),
+                borderColor: green[500],
+                backgroundColor: red[200],
+            },
+        ],
+    }
+};
+
+function VmafGraph({vmafScores}) {
+    const graphData = data(vmafScores);
+    return <Line options={graphOptions} data={graphData}/>;
+}
+
 
 function ElevationScroll(props) {
     const {children} = props;
@@ -34,20 +95,40 @@ function presentableFilename(filename) {
     return filename.substring(0, 17) + "..";
 }
 
-// Initialize ffVmaf wasm module.
+const VideoCanvas = () => {
 
+    const comparisonSlider = {
+        position: "relative",
+        width: "1280px",
+        height: "720px",
+        borderWidth: "5px",
+        borderColor: grey[100],
+        borderStyle: "solid"
+    };
+
+    const dividerStyle = {
+        position: "absolute",
+        width: "4px",
+        height: "100%",
+        backgroundColor: grey[100],
+        left: "50%",
+        top: "0",
+        bottom: "0",
+        marginLeft: "-1px",
+        cursor: "ew-resize"
+    };
+
+    return (
+        <>
+            <div style={comparisonSlider}>
+                <div style={dividerStyle}>
+                </div>
+            </div>
+        </>
+    )
+}
 
 const Inputs = () => {
-
-    const workerRef = useRef()
-    useEffect(() => {
-        workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
-        workerRef.current.onmessage = (evt) =>
-            alert(`WebWorker Response => ${evt.data}`)
-        return () => {
-            workerRef.current.terminate()
-        }
-    }, []);
 
     const [state, setState] = useState(() => {
         return {
@@ -56,14 +137,34 @@ const Inputs = () => {
             distortedVideoFilename: "",
             distortedVideoFile: null,
             computedVmafScore: "",
+            vmafScores: null,
         }
     });
+
+    const workerRef = useRef()
+    useEffect(() => {
+        workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
+        workerRef.current.onmessage = (evt) =>
+        {
+            console.log("Received message from worker");
+            setState(prevState => {
+                return {
+                    ...prevState,
+                    vmafScores: evt.data[0],
+                };
+            });
+        }
+        return () => {
+            workerRef.current.terminate()
+        }
+    }, [state]);
 
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
         if (state.referenceVideoFile !== null) {
             workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile])
         }
+        console.log(state.vmafScores)
     }, [state])
 
     function handleReferenceVideoChange(event) {
@@ -119,6 +220,7 @@ const Inputs = () => {
 
     return (<>
         <Grid container spacing={2} paddingTop={4} justifyContent="center">
+            {state.vmafScores === null ? <VideoCanvas/>: <VmafGraph vmafScores={state.vmafScores}/>}
             <Grid item xs={6}>
                 <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
                         startIcon={<VideoFileTwoToneIcon/>}>
@@ -155,49 +257,6 @@ const Inputs = () => {
     </>)
 }
 
-const VideoCanvas = () => {
-
-    const comparisonSlider = {
-        position: "relative",
-        width: "1280px",
-        height: "720px",
-        borderWidth: "5px",
-        borderColor: "white",
-        borderStyle: "solid"
-    };
-
-    const dividerStyle = {
-        position: "absolute",
-        width: "4px",
-        height: "100%",
-        backgroundColor: "white",
-        left: "50%",
-        top: "0",
-        bottom: "0",
-        marginLeft: "-1px",
-        cursor: "ew-resize"
-    };
-
-    return (
-        <>
-            <div style={comparisonSlider}>
-                <div style={dividerStyle}>
-
-                </div>
-            </div>
-        </>
-    )
-}
-
-const VmafGraph = () => {
-
-
-
-    return (
-        <canvas id="myChart" width="400" height="400"></canvas>
-    )
-}
-
 export default function Landing() {
 
     const appBarStyle = {
@@ -225,7 +284,6 @@ export default function Landing() {
     };
 
     const innerContainerStyle = {
-        backgroundColor: "#EEE",
         maxWidth: "100%",
         marginTop: "20px",
         paddingY: "20px",
@@ -255,7 +313,7 @@ export default function Landing() {
                     <AppBar position="relative" style={appBarStyle}>
                         <Toolbar disableGutters>
                             <Button disableRipple style={logoContainer}>
-                                <img src={logo} style={logoStyle}/>
+                                <img src={logo} style={logoStyle} alt={"logo"}/>
                             </Button>
                             {tabs}
                         </Toolbar>
@@ -266,8 +324,6 @@ export default function Landing() {
                 {/*</Typography>*/}
                 <Grid container style={innerContainerStyle} direction="column" justifyContent="center"
                       alignItems="center">
-                    {/*<VideoCanvas/>*/}
-                    <VmafGraph/>
                     <Inputs/>
                 </Grid>
             </Container>
