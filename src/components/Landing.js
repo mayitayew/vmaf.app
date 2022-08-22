@@ -4,14 +4,20 @@ import Typography from '@mui/material/Typography';
 import AppBar from '@mui/material/AppBar';
 import {ThemeProvider, Toolbar, useScrollTrigger} from "@mui/material";
 import Grid from '@mui/material/Grid';
+import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
 import {CssBaseline} from "@mui/material";
 import VideoFileTwoToneIcon from '@mui/icons-material/VideoFileTwoTone';
 import FunctionsTwoToneIcon from '@mui/icons-material/FunctionsTwoTone';
 import {LoadingButton} from '@mui/lab';
+import MenuItem from '@mui/material/MenuItem';
 import logo from '../assets/logo.png';
+import InputLabel from '@mui/material/InputLabel';
+import {CheckCircle} from "@mui/icons-material";
 import theme from "./Theme";
 import {green, grey, red} from "@mui/material/colors";
+import Select from '@mui/material/Select';
+import {Rnd} from "react-rnd";
 
 import {
     Chart as ChartJS,
@@ -37,32 +43,36 @@ ChartJS.register(
 
 const graphOptions = {
     responsive: true,
-    scales:{
+    legend: {
+        display: false,
+    },
+    scales: {
         x: {
             display: false //this will remove all the x-axis grid lines
-        }
+        },
     },
     plugins: {
         title: {
             display: true,
-            text: 'Graph',
+            text: 'Vmaf Scores Graph',
         },
     },
 };
 
 const data = (vmafScores) => {
     vmafScores = vmafScores.slice(0, 90);
-    const labels = vmafScores.map(function(elem, index) {
-       return index;
+    const labels = vmafScores.map(function (elem, index) {
+        return index;
     });
     return {
         labels: labels,
         datasets: [
             {
-                label: 'Frame Vmaf Score',
+                label: 'Scores at each frame',
+                pointRadius: 0.5,
                 data: vmafScores.map((x) => x),
                 borderColor: green[500],
-                backgroundColor: red[200],
+                backgroundColor: green[500],
             },
         ],
     }
@@ -70,9 +80,11 @@ const data = (vmafScores) => {
 
 function VmafGraph({vmafScores}) {
     const graphData = data(vmafScores);
-    return <Line options={graphOptions} data={graphData}/>;
+    return (
+        <Container maxWidth="md">
+            <Line width="854px" height="480px" options={graphOptions} data={graphData}/>
+        </Container>);
 }
-
 
 function ElevationScroll(props) {
     const {children} = props;
@@ -99,8 +111,8 @@ const VideoCanvas = () => {
 
     const comparisonSlider = {
         position: "relative",
-        width: "1280px",
-        height: "720px",
+        width: "854px",
+        height: "480px",
         borderWidth: "5px",
         borderColor: grey[100],
         borderStyle: "solid"
@@ -116,6 +128,14 @@ const VideoCanvas = () => {
         bottom: "0",
         marginLeft: "-1px",
         cursor: "ew-resize"
+    };
+
+    const style = {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "solid 1px #ddd",
+        background: "#f0f0f0"
     };
 
     return (
@@ -137,6 +157,7 @@ const Inputs = () => {
             distortedVideoFilename: "",
             distortedVideoFile: null,
             computedVmafScore: "",
+            vmafModel: "HD",
             vmafScores: null,
         }
     });
@@ -144,8 +165,7 @@ const Inputs = () => {
     const workerRef = useRef()
     useEffect(() => {
         workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
-        workerRef.current.onmessage = (evt) =>
-        {
+        workerRef.current.onmessage = (evt) => {
             console.log("Received message from worker");
             setState(prevState => {
                 return {
@@ -161,10 +181,11 @@ const Inputs = () => {
 
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
+        const use_phone_model = state.vmafModel === "Phone" || state.vmafModel == "Phone-Neg";
+        const use_neg_model = state.vmafModel === "HD-Neg" || state.vmafModel == "Phone-Neg";
         if (state.referenceVideoFile !== null) {
-            workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile])
+            workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile, use_phone_model, use_neg_model])
         }
-        console.log(state.vmafScores)
     }, [state])
 
     function handleReferenceVideoChange(event) {
@@ -202,7 +223,7 @@ const Inputs = () => {
 
     const referenceButtonText = () => {
         if (state.referenceVideoFilename.length === 0) {
-            return <Typography>SELECT REFERENCE VIDEO</Typography>
+            return <Typography>Choose reference video</Typography>
         }
         return <Typography
             color="secondary">{state.referenceVideoFilename}</Typography>
@@ -210,18 +231,47 @@ const Inputs = () => {
 
     const distortedButtonText = () => {
         if (state.distortedVideoFilename.length === 0) {
-            return <Typography>SELECT DISTORTED VIDEO</Typography>
+            return <Typography>Choose distorted video</Typography>
         }
         return <Typography
             color="secondary">{state.distortedVideoFilename}</Typography>
     }
 
+    const VmafModelSelect = () => {
+        const handleChange = (event) => {
+            setState(prevState => {
+                return {
+                    ...prevState,
+                    vmafModel: event.target.value,
+                };
+            });
+        };
+
+        return (
+            <FormControl sx={{m: 1, minWidth: 120}} size="small">
+                <InputLabel id="demo-select-small">Vmaf Model</InputLabel>
+                <Select
+                    labelId="demo-select-small"
+                    id="demo-select-small"
+                    value={state.vmafModel}
+                    label="Vmaf Model"
+                    onChange={handleChange}
+                >
+                    <MenuItem value="HD">HD</MenuItem>
+                    <MenuItem value="HD-Neg">HD NEG mode</MenuItem>
+                    <MenuItem value="Phone">Phone</MenuItem>
+                    <MenuItem value="Phone-Neg">Phone NEG mode</MenuItem>
+                </Select>
+            </FormControl>
+        );
+    }
+
     const buttonSize = {maxWidth: '230px', minWidth: '230px', textTransform: 'none'};
 
     return (<>
+        {state.vmafScores === null ? <VideoCanvas/> : <VmafGraph vmafScores={state.vmafScores}/>}
         <Grid container spacing={2} paddingTop={4} justifyContent="center">
-            {state.vmafScores === null ? <VideoCanvas/>: <VmafGraph vmafScores={state.vmafScores}/>}
-            <Grid item xs={6}>
+            <Grid item xs={3}>
                 <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
                         startIcon={<VideoFileTwoToneIcon/>}>
                     {referenceButtonText()}
@@ -229,7 +279,7 @@ const Inputs = () => {
                 <input hidden accept="video/mp4" type="file" id="reference-video-upload"
                        onChange={handleReferenceVideoChange}/>
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={3}>
                 <Button style={buttonSize} for="distorted-video-upload" variant="contained" component="label"
                         startIcon={<VideoFileTwoToneIcon/>}>
                     {distortedButtonText()}
@@ -237,10 +287,14 @@ const Inputs = () => {
                 <input hidden accept="video/mp4" type="file" id="distorted-video-upload"
                        onChange={handleDistortedVideoChange}/>
             </Grid>
+            <Grid item xs={3}>
+                <VmafModelSelect/>
+            </Grid>
         </Grid>
         <Grid container spacing={2} paddingTop={4} justifyContent="center" direction="column">
             <Grid item xs={5}>
-                <LoadingButton variant="contained" disabled={!inputsProvided()} color="secondary" onClick={computeVmafInWebworker}
+                <LoadingButton variant="contained" disabled={!inputsProvided()} color="secondary"
+                               onClick={computeVmafInWebworker}
                                startIcon={<FunctionsTwoToneIcon/>}>
                     Compute VMAF score
                 </LoadingButton>
@@ -274,6 +328,8 @@ export default function Landing() {
 
     const tabListStyle = {marginLeft: "25px", textTransform: "none"};
 
+    const featurePointStyle = {marginBottom: "1rem"}
+
     const buttonStyle = {
         borderRadius: "5px",
         marginRight: "25px",
@@ -297,12 +353,42 @@ export default function Landing() {
                 vmaf.web
             </Typography>
             <div style={tabListStyle}>
-                <Button style={buttonStyle} variant="contained" color="secondary">
-                    Sign up
+                <Button style={buttonStyle} variant="contained" color="textSecondary">
+                    About
+                </Button>
+                <Button style={buttonStyle} variant="contained" color="textSecondary">
+                    Give feedback
                 </Button>
             </div>
         </>
     )
+
+    const LeftSideContent = () => {
+        return (<>
+            {/*<Grid container spacing={2}>*/}
+            <Grid container paddingTop={4} direction="row" justifyContent="center" spacing={2}>
+                <Grid item>
+                    <Typography variant="subtitle1" color="textSecondary" style={featurePointStyle}>
+                        <CheckCircle color="secondary" fontSize="small"/>
+                        &nbsp;Compute VMAF on encoded video files.
+                    </Typography>
+                </Grid>
+                <Grid item>
+                    <Typography variant="subtitle1" color="textSecondary" style={featurePointStyle}>
+                        <CheckCircle color="secondary" fontSize="small"/>
+                        &nbsp;Runs entirely on your browser.
+                    </Typography>
+                </Grid>
+                <Grid item>
+                    <Typography variant="subtitle1" color="textSecondary" style={featurePointStyle}>
+                        <CheckCircle color="secondary" fontSize="small"/>
+                        &nbsp;VMAF/FFmpeg installation is not required.
+                    </Typography>
+                </Grid>
+            </Grid>
+            {/*</Grid>*/}
+        </>)
+    }
 
 
     return (
@@ -319,9 +405,9 @@ export default function Landing() {
                         </Toolbar>
                     </AppBar>
                 </ElevationScroll>
-                {/*<Typography variant="h6" gutterBottom color="textPrimary" marginTop="20px">*/}
-                {/*    Compute VMAF and visualize video quality, entirely on your browser.*/}
-                {/*</Typography>*/}
+
+                <LeftSideContent/>
+
                 <Grid container style={innerContainerStyle} direction="column" justifyContent="center"
                       alignItems="center">
                     <Inputs/>
