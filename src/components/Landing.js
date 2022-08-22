@@ -181,8 +181,8 @@ const Inputs = () => {
 
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
-        const use_phone_model = state.vmafModel === "Phone" || state.vmafModel == "Phone-Neg";
-        const use_neg_model = state.vmafModel === "HD-Neg" || state.vmafModel == "Phone-Neg";
+        const use_phone_model = state.vmafModel.includes("Phone");
+        const use_neg_model = state.vmafModel.includes("Neg");
         if (state.referenceVideoFile !== null) {
             workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile, use_phone_model, use_neg_model])
         }
