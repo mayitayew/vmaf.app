@@ -63,6 +63,7 @@ class VmafScoresBuffer {
     free() {
         this._isInitialized = false;
         this._module._free(this._dataPtr);
+        this._scoredata = null;
     }
 }
 

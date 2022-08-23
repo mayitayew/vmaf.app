@@ -15,9 +15,8 @@ import logo from '../assets/logo.png';
 import InputLabel from '@mui/material/InputLabel';
 import {CheckCircle} from "@mui/icons-material";
 import theme from "./Theme";
-import {green, grey, red} from "@mui/material/colors";
+import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
-import {Rnd} from "react-rnd";
 
 import {
     Chart as ChartJS,
@@ -60,7 +59,7 @@ const graphOptions = {
 };
 
 const data = (vmafScores) => {
-    vmafScores = vmafScores.slice(0, 90);
+    vmafScores = vmafScores.slice(0, 350);
     const labels = vmafScores.map(function (elem, index) {
         return index;
     });
@@ -68,10 +67,11 @@ const data = (vmafScores) => {
         labels: labels,
         datasets: [
             {
-                label: 'Scores at each frame',
+                label: "Frame's vmaf score",
                 pointRadius: 0.5,
                 data: vmafScores.map((x) => x),
                 borderColor: green[500],
+                borderWidth: 0.8,
                 backgroundColor: green[500],
             },
         ],
@@ -223,7 +223,7 @@ const Inputs = () => {
 
     const referenceButtonText = () => {
         if (state.referenceVideoFilename.length === 0) {
-            return <Typography>Choose reference video</Typography>
+            return <Typography>Reference video</Typography>
         }
         return <Typography
             color="secondary">{state.referenceVideoFilename}</Typography>
@@ -231,7 +231,7 @@ const Inputs = () => {
 
     const distortedButtonText = () => {
         if (state.distortedVideoFilename.length === 0) {
-            return <Typography>Choose distorted video</Typography>
+            return <Typography>Distorted video</Typography>
         }
         return <Typography
             color="secondary">{state.distortedVideoFilename}</Typography>
@@ -270,7 +270,10 @@ const Inputs = () => {
 
     return (<>
         {state.vmafScores === null ? <VideoCanvas/> : <VmafGraph vmafScores={state.vmafScores}/>}
-        <Grid container spacing={2} paddingTop={4} justifyContent="center">
+        <Typography color="secondary" variant="subtitle1" marginTop="5px">
+            Select a reference video, a distorted video, and a VMAF model to get started.
+        </Typography>
+        <Grid container spacing={1} paddingTop={4} justifyContent="center">
             <Grid item xs={3}>
                 <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
                         startIcon={<VideoFileTwoToneIcon/>}>
@@ -287,19 +290,19 @@ const Inputs = () => {
                 <input hidden accept="video/mp4" type="file" id="distorted-video-upload"
                        onChange={handleDistortedVideoChange}/>
             </Grid>
-            <Grid item xs={3}>
+        </Grid>
+        <Grid container spacing={1} paddingTop={2} justifyContent="center" direction="column" alignItems="center">
+            <Grid item xs={4}>
                 <VmafModelSelect/>
             </Grid>
-        </Grid>
-        <Grid container spacing={2} paddingTop={4} justifyContent="center" direction="column">
-            <Grid item xs={5}>
+            <Grid item xs={4}>
                 <LoadingButton variant="contained" disabled={!inputsProvided()} color="secondary"
                                onClick={computeVmafInWebworker}
                                startIcon={<FunctionsTwoToneIcon/>}>
                     Compute VMAF score
                 </LoadingButton>
             </Grid>
-            <Grid item xs={5}>
+            <Grid item xs={4}>
                 {state.computedVmafScore.length !== 0 ?
                     <Typography variant="h3"
                                 color="textSecondary">Score: {state.computedVmafScore}</Typography>
@@ -406,7 +409,7 @@ export default function Landing() {
                     </AppBar>
                 </ElevationScroll>
 
-                <LeftSideContent/>
+                {/*<LeftSideContent/>*/}
 
                 <Grid container style={innerContainerStyle} direction="column" justifyContent="center"
                       alignItems="center">
