@@ -1,10 +1,11 @@
 import Module from './ffvmaf_wasm_lib.js';
 import VmafScoresBuffer from '../vmaf_scores_buffer';
 
-let ffModule;
-
+let ffModule = undefined;
+let vmafScoresBuffer = undefined;
 Module().then(module => {
     ffModule = module;
+    vmafScoresBuffer = new VmafScoresBuffer(ffModule, 10000);
     console.log('ffModule loaded');
     console.log('Vmaf version is ' + ffModule.getVmafVersion());
 }).catch(e => {
@@ -13,15 +14,26 @@ Module().then(module => {
 
 onmessage = function (e) {
     console.log("Webworker called");
-    if (e.data.length < 4) {
+    if (e.data.length == 1) {
+        console.log("Interval called.");
+        if (vmafScoresBuffer !== undefined && vmafScoresBuffer._isInitialized) {
+            postMessage([vmafScoresBuffer.getScoreData()]);
+        } else {
+            console.log("Buffer is not initialized.");
+            return;
+        }
+    }
+
+    if (ffModule === undefined) {
+        console.log("FFmodule is not ready.");
         return;
     }
+
     const reference_file = e.data[0];
     const test_file = e.data[1];
     const use_phone_model = e.data[2];
     const use_neg_model = e.data[3];
 
-    var vmafScoresBuffer = new VmafScoresBuffer(ffModule, 10000);
     ffModule.FS.mkdir('/videos');
     ffModule.FS.mount(ffModule.WORKERFS, {files: [reference_file, test_file]}, '/videos');
     ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, vmafScoresBuffer.getHeapAddress(),

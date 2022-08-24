@@ -13,7 +13,6 @@ import {LoadingButton} from '@mui/lab';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../assets/logo.png';
 import InputLabel from '@mui/material/InputLabel';
-import {CheckCircle} from "@mui/icons-material";
 import theme from "./Theme";
 import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
@@ -159,25 +158,59 @@ const Inputs = () => {
             computedVmafScore: "",
             vmafModel: "HD",
             vmafScores: null,
+            fps: null,
+            framesProcessed: null,
+            totalNumFrames: null,
         }
     });
 
     const workerRef = useRef()
-    useEffect(() => {
+    const [workerState, setWorkerState] = useState(() => {
         workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
         workerRef.current.onmessage = (evt) => {
             console.log("Received message from worker");
             setState(prevState => {
+                const outputBuffer = evt.data[0];
                 return {
                     ...prevState,
-                    vmafScores: evt.data[0],
+                    vmafScores: outputBuffer.slice(0, outputBuffer[0]),
+                    totalNumFrames: outputBuffer[0],
+                    framesProcessed: outputBuffer[1],
+                    fps: outputBuffer[2],
                 };
             });
+            console.log(state.totalNumFrames);
         }
+        // const interval = setInterval(() => {
+        //     workerRef.current.postMessage(["start"]);
+        // }, 1000);
         return () => {
             workerRef.current.terminate()
         }
-    }, [state]);
+    }, state)
+
+   // useEffect(() => {
+        // workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
+        // workerRef.current.onmessage = (evt) => {
+        //     console.log("Received message from worker");
+        //     setState(prevState => {
+        //         const outputBuffer = evt.data[0];
+        //         return {
+        //             ...prevState,
+        //             vmafScores: outputBuffer.slice(0, outputBuffer[0]),
+        //             totalNumFrames: outputBuffer[0],
+        //             framesProcessed: outputBuffer[1],
+        //             fps: outputBuffer[2],
+        //         };
+        //     });
+        // }
+        // const interval = setInterval(() => {
+        //     workerRef.current.postMessage(["start"]);
+        // }, 1000);
+        // return () => {
+        //     workerRef.current.terminate()
+        // }
+   // }, [state]);
 
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
@@ -365,34 +398,6 @@ export default function Landing() {
             </div>
         </>
     )
-
-    const LeftSideContent = () => {
-        return (<>
-            {/*<Grid container spacing={2}>*/}
-            <Grid container paddingTop={4} direction="row" justifyContent="center" spacing={2}>
-                <Grid item>
-                    <Typography variant="subtitle1" color="textSecondary" style={featurePointStyle}>
-                        <CheckCircle color="secondary" fontSize="small"/>
-                        &nbsp;Compute VMAF on encoded video files.
-                    </Typography>
-                </Grid>
-                <Grid item>
-                    <Typography variant="subtitle1" color="textSecondary" style={featurePointStyle}>
-                        <CheckCircle color="secondary" fontSize="small"/>
-                        &nbsp;Runs entirely on your browser.
-                    </Typography>
-                </Grid>
-                <Grid item>
-                    <Typography variant="subtitle1" color="textSecondary" style={featurePointStyle}>
-                        <CheckCircle color="secondary" fontSize="small"/>
-                        &nbsp;VMAF/FFmpeg installation is not required.
-                    </Typography>
-                </Grid>
-            </Grid>
-            {/*</Grid>*/}
-        </>)
-    }
-
 
     return (
         <ThemeProvider theme={theme}>
