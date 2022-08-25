@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import {CssBaseline} from "@mui/material";
 import VideoFileTwoToneIcon from '@mui/icons-material/VideoFileTwoTone';
 import FunctionsTwoToneIcon from '@mui/icons-material/FunctionsTwoTone';
-import {LoadingButton} from '@mui/lab';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../assets/logo.png';
 import InputLabel from '@mui/material/InputLabel';
@@ -58,7 +57,6 @@ const graphOptions = {
 };
 
 const data = (vmafScores) => {
-    vmafScores = vmafScores.slice(0, 350);
     const labels = vmafScores.map(function (elem, index) {
         return index;
     });
@@ -106,42 +104,48 @@ function presentableFilename(filename) {
     return filename.substring(0, 17) + "..";
 }
 
-const VideoCanvas = () => {
+const FrameCanvas = ({decodedFrame}) => {
+    const ref = useRef()
+
+    useEffect(() => {
+        if (ref.current) {
+            const canvas = ref.current.getContext('2d')
+            canvas.drawImage(decodedFrame, 0, 0, 480, 360);
+        }
+    }, [])
+
+    return <canvas ref={ref}/>
+}
+
+
+const ComparisonCanvas = ({referenceFrame, distortedFrame}) => {
 
     const comparisonSlider = {
         position: "relative",
-        width: "854px",
-        height: "480px",
-        borderWidth: "5px",
+        width: "920px",
+        height: "360px",
+        borderWidth: "3px",
         borderColor: grey[100],
         borderStyle: "solid"
     };
 
     const dividerStyle = {
         position: "absolute",
-        width: "4px",
+        width: "2px",
         height: "100%",
         backgroundColor: grey[100],
         left: "50%",
         top: "0",
         bottom: "0",
         marginLeft: "-1px",
-        cursor: "ew-resize"
-    };
-
-    const style = {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "solid 1px #ddd",
-        background: "#f0f0f0"
     };
 
     return (
         <>
             <div style={comparisonSlider}>
-                <div style={dividerStyle}>
-                </div>
+                {/*<FrameCanvas decodedFrame={referenceFrame}/>*/}
+                <div style={dividerStyle}/>
+               {/*<FrameCanvas decodedFrame={distortedFrame}/>*/}
             </div>
         </>
     )
@@ -161,63 +165,58 @@ const Inputs = () => {
             fps: null,
             framesProcessed: null,
             totalNumFrames: null,
+            showGraph: false,
         }
     });
 
     const workerRef = useRef()
-    const [workerState, setWorkerState] = useState(() => {
-        workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
-        workerRef.current.onmessage = (evt) => {
-            console.log("Received message from worker");
-            setState(prevState => {
-                const outputBuffer = evt.data[0];
-                return {
-                    ...prevState,
-                    vmafScores: outputBuffer.slice(0, outputBuffer[0]),
-                    totalNumFrames: outputBuffer[0],
-                    framesProcessed: outputBuffer[1],
-                    fps: outputBuffer[2],
-                };
-            });
-            console.log(state.totalNumFrames);
-        }
-        // const interval = setInterval(() => {
-        //     workerRef.current.postMessage(["start"]);
-        // }, 1000);
-        return () => {
-            workerRef.current.terminate()
-        }
-    }, state)
+    const intervalRef = useRef()
+    useEffect(() => {
+            workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
+            workerRef.current.onmessage = (evt) => {
+                if (typeof evt.data[0] === 'string') {
+                    if (evt.data[0] === "ClearInterval") {
+                        console.log("Clearing interval...");
+                        clearInterval(intervalRef.current);
+                        return;
+                    }
+                    return;
+                }
 
-   // useEffect(() => {
-        // workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
-        // workerRef.current.onmessage = (evt) => {
-        //     console.log("Received message from worker");
-        //     setState(prevState => {
-        //         const outputBuffer = evt.data[0];
-        //         return {
-        //             ...prevState,
-        //             vmafScores: outputBuffer.slice(0, outputBuffer[0]),
-        //             totalNumFrames: outputBuffer[0],
-        //             framesProcessed: outputBuffer[1],
-        //             fps: outputBuffer[2],
-        //         };
-        //     });
-        // }
-        // const interval = setInterval(() => {
-        //     workerRef.current.postMessage(["start"]);
-        // }, 1000);
-        // return () => {
-        //     workerRef.current.terminate()
-        // }
-   // }, [state]);
+                intervalRef.current = setInterval(() => {
+                    // workerRef.current.postMessage(["RequestingBuffer"]);
+                    setState(prevState => {
+                        const outputBuffer = evt.data[0];
+
+                        const totalNumFrames = outputBuffer[0];
+                        const framesProcessed = outputBuffer[1];
+                        const fps = outputBuffer[2];
+                        const vmafScores = outputBuffer[3 + framesProcessed];
+                        console.log(vmafScores)
+                        return {
+                            ...prevState,
+                            totalNumFrames,
+                            framesProcessed,
+                            fps,
+                            vmafScores,
+                        };
+                    });
+                }, 1000);
+                return;
+
+            }
+            return () => {
+                workerRef.current.terminate()
+            }
+        }, []
+    );
 
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
         const use_phone_model = state.vmafModel.includes("Phone");
         const use_neg_model = state.vmafModel.includes("Neg");
         if (state.referenceVideoFile !== null) {
-            workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile, use_phone_model, use_neg_model])
+            workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
         }
     }, [state])
 
@@ -299,13 +298,28 @@ const Inputs = () => {
         );
     }
 
+
+    const ProgressInfo = () => {
+        if (state.framesProcessed === null) {
+            return (
+                <Typography color="secondary" variant="subtitle1" marginTop="5px">
+                    Select a reference video, a distorted video, and a VMAF model to get started.
+                </Typography>
+            )
+        }
+        const fps = state.fps.toFixed(2);
+        return (
+            <Typography color="secondary" variant="subtitle1" marginTop="5px">
+                {state.framesProcessed} frames {fps} FPS
+            </Typography>
+        )
+    }
+
     const buttonSize = {maxWidth: '230px', minWidth: '230px', textTransform: 'none'};
 
     return (<>
-        {state.vmafScores === null ? <VideoCanvas/> : <VmafGraph vmafScores={state.vmafScores}/>}
-        <Typography color="secondary" variant="subtitle1" marginTop="5px">
-            Select a reference video, a distorted video, and a VMAF model to get started.
-        </Typography>
+        {state.showGraph ? <VmafGraph vmafScores={state.vmafScores}/> : <ComparisonCanvas/>}
+        {<ProgressInfo/>}
         <Grid container spacing={1} paddingTop={4} justifyContent="center">
             <Grid item xs={3}>
                 <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
@@ -329,11 +343,11 @@ const Inputs = () => {
                 <VmafModelSelect/>
             </Grid>
             <Grid item xs={4}>
-                <LoadingButton variant="contained" disabled={!inputsProvided()} color="secondary"
+                <Button variant="contained" disabled={!inputsProvided()} color="secondary"
                                onClick={computeVmafInWebworker}
-                               startIcon={<FunctionsTwoToneIcon/>}>
-                    Compute VMAF score
-                </LoadingButton>
+                               startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
+                    Compute VMAF
+                </Button>
             </Grid>
             <Grid item xs={4}>
                 {state.computedVmafScore.length !== 0 ?

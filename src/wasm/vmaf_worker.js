@@ -13,17 +13,6 @@ Module().then(module => {
 });
 
 onmessage = function (e) {
-    console.log("Webworker called");
-    if (e.data.length == 1) {
-        console.log("Interval called.");
-        if (vmafScoresBuffer !== undefined && vmafScoresBuffer._isInitialized) {
-            postMessage([vmafScoresBuffer.getScoreData()]);
-        } else {
-            console.log("Buffer is not initialized.");
-            return;
-        }
-    }
-
     if (ffModule === undefined) {
         console.log("FFmodule is not ready.");
         return;
@@ -36,7 +25,8 @@ onmessage = function (e) {
 
     ffModule.FS.mkdir('/videos');
     ffModule.FS.mount(ffModule.WORKERFS, {files: [reference_file, test_file]}, '/videos');
+    postMessage([vmafScoresBuffer.getScoreData()]);
     ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, vmafScoresBuffer.getHeapAddress(),
         use_phone_model, use_neg_model);
-    postMessage([vmafScoresBuffer.getScoreData()]);
+    postMessage(["ClearInterval"]);
 }
