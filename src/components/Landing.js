@@ -104,21 +104,49 @@ function presentableFilename(filename) {
     return filename.substring(0, 17) + "..";
 }
 
-const FrameCanvas = ({decodedFrame}) => {
+const FrameCanvas = ({displayFrame}) => {
     const ref = useRef()
+
+    const canvasStyle = {borderStyle: "solid", borderColor: '#125071', borderWidth: "4px"}
 
     useEffect(() => {
         if (ref.current) {
-            const canvas = ref.current.getContext('2d')
-            canvas.drawImage(decodedFrame, 0, 0, 480, 360);
+            const canvas = ref.current.getContext('2d');
+            const clampedArray = Uint8ClampedArray.from(displayFrame);
+            const imgData = new ImageData(clampedArray, 1920);
+          //  canvas.putImageData(imgData, 0, 0);
+          //   const arr = new Uint8ClampedArray(480*360*4);
+          //
+          //   // Fill the array with the same RGBA values
+          //   for (let i = 0; i < arr.length; i += 4) {
+          //       arr[i + 0] = 0;    // R value
+          //       arr[i + 1] = 190;  // G value
+          //       arr[i + 2] = 0;    // B value
+          //       arr[i + 3] = 255;  // A value
+          //   }
+          //
+          //   // Initialize a new ImageData object
+          //   let imageData = new ImageData(arr, 480);
+
+            // Draw image data to the canvas
+            canvas.putImageData(imgData, 0, 0, 0, 0, 1920, 1080);
+
         }
     }, [])
 
-    return <canvas ref={ref}/>
+    return (
+        <Grid container justifyContent="center" spacing={0.5}>
+            <Grid item>
+                <canvas ref={ref} width="1920px" height="1080px" style={canvasStyle}/>
+            </Grid>
+            {/*<Grid item>*/}
+            {/*    <canvas ref={ref} width="480px" height="360px" style={canvasStyle}/>*/}
+            {/*</Grid>*/}
+        </Grid>)
 }
 
 
-const ComparisonCanvas = ({referenceFrame, distortedFrame}) => {
+const ComparisonCanvas = ({displayFrame}) => {
 
     const comparisonSlider = {
         position: "relative",
@@ -142,11 +170,11 @@ const ComparisonCanvas = ({referenceFrame, distortedFrame}) => {
 
     return (
         <>
-            <div style={comparisonSlider}>
-                {/*<FrameCanvas decodedFrame={referenceFrame}/>*/}
-                <div style={dividerStyle}/>
-               {/*<FrameCanvas decodedFrame={distortedFrame}/>*/}
-            </div>
+            {/*<div style={comparisonSlider}>*/}
+            <FrameCanvas displayFrame={displayFrame}/>
+            {/*<div style={dividerStyle}/>*/}
+            {/*<FrameCanvas/>*/}
+            {/*</div>*/}
         </>
     )
 }
@@ -166,6 +194,7 @@ const Inputs = () => {
             framesProcessed: null,
             totalNumFrames: null,
             showGraph: false,
+            displayFrame: null,
         }
     });
 
@@ -191,14 +220,18 @@ const Inputs = () => {
                         const totalNumFrames = outputBuffer[0];
                         const framesProcessed = outputBuffer[1];
                         const fps = outputBuffer[2];
+                        console.log(fps);
                         const vmafScores = outputBuffer[3 + framesProcessed];
-                        console.log(vmafScores)
+
+                        const displayFrame = evt.data[1];
+                        console.log("Frame data is ", displayFrame);
                         return {
                             ...prevState,
                             totalNumFrames,
                             framesProcessed,
                             fps,
                             vmafScores,
+                            displayFrame,
                         };
                     });
                 }, 1000);
@@ -318,7 +351,7 @@ const Inputs = () => {
     const buttonSize = {maxWidth: '230px', minWidth: '230px', textTransform: 'none'};
 
     return (<>
-        {state.showGraph ? <VmafGraph vmafScores={state.vmafScores}/> : <ComparisonCanvas/>}
+        {state.displayFrame === null ? null : <FrameCanvas displayFrame={state.displayFrame}/>}
         {<ProgressInfo/>}
         <Grid container spacing={1} paddingTop={4} justifyContent="center">
             <Grid item xs={3}>
@@ -344,8 +377,8 @@ const Inputs = () => {
             </Grid>
             <Grid item xs={4}>
                 <Button variant="contained" disabled={!inputsProvided()} color="secondary"
-                               onClick={computeVmafInWebworker}
-                               startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
+                        onClick={computeVmafInWebworker}
+                        startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
                     Compute VMAF
                 </Button>
             </Grid>

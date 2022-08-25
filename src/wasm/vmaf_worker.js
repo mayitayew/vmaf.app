@@ -1,11 +1,14 @@
 import Module from './ffvmaf_wasm_lib.js';
 import VmafScoresBuffer from '../vmaf_scores_buffer';
+import FrameBuffer from "../frame_buffer";
 
 let ffModule = undefined;
 let vmafScoresBuffer = undefined;
+let frameBuffer = undefined;
 Module().then(module => {
     ffModule = module;
     vmafScoresBuffer = new VmafScoresBuffer(ffModule, 10000);
+    frameBuffer = new FrameBuffer(ffModule, 1920 * 1080 * 4);
     console.log('ffModule loaded');
     console.log('Vmaf version is ' + ffModule.getVmafVersion());
 }).catch(e => {
@@ -25,8 +28,8 @@ onmessage = function (e) {
 
     ffModule.FS.mkdir('/videos');
     ffModule.FS.mount(ffModule.WORKERFS, {files: [reference_file, test_file]}, '/videos');
-    postMessage([vmafScoresBuffer.getScoreData()]);
-    ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, vmafScoresBuffer.getHeapAddress(),
+    postMessage([vmafScoresBuffer.getScoreData(), frameBuffer.getFrameData()]);
+    ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, frameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
         use_phone_model, use_neg_model);
     postMessage(["ClearInterval"]);
 }
