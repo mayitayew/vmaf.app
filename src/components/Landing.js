@@ -132,7 +132,7 @@ const FrameCanvas = ({displayFrame}) => {
             canvas.putImageData(imgData, 0, 0, 0, 0, 1920, 1080);
 
         }
-    }, [])
+    }, [displayFrame])
 
     return (
         <Grid container justifyContent="center" spacing={0.5}>
