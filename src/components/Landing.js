@@ -181,20 +181,31 @@ const ComparisonCanvas = ({displayFrame}) => {
 
 const Inputs = () => {
 
-    const [state, setState] = useState(() => {
+    const [inputsState, setInputsState] = useState(() => {
         return {
             referenceVideoFilename: "",
             referenceVideoFile: null,
             distortedVideoFilename: "",
             distortedVideoFile: null,
-            computedVmafScore: "",
             vmafModel: "HD",
+        }
+    });
+
+    const [outputsState, setOutputsState] = useState(() => {
+        return {
+            pooledVmafScore: "",
             vmafScores: null,
             fps: null,
             framesProcessed: null,
             totalNumFrames: null,
-            showGraph: false,
             displayFrame: null,
+        }
+    });
+
+    const [state, setState] = useState(() => {
+        return {
+            showGraph: false,
+            currentState: "NOT_STARTED", // One of [PROCESSING, DONE, NOT_STARTED]
         }
     });
 
@@ -214,7 +225,7 @@ const Inputs = () => {
 
                 intervalRef.current = setInterval(() => {
                     // workerRef.current.postMessage(["RequestingBuffer"]);
-                    setState(prevState => {
+                    setOutputsState(prevState => {
                         const outputBuffer = evt.data[0];
 
                         const totalNumFrames = outputBuffer[0];
@@ -246,65 +257,75 @@ const Inputs = () => {
 
     const computeVmafInWebworker = useCallback(async () => {
         console.log("Ready to call compute.")
-        const use_phone_model = state.vmafModel.includes("Phone");
-        const use_neg_model = state.vmafModel.includes("Neg");
-        if (state.referenceVideoFile !== null) {
-            workerRef.current.postMessage([state.referenceVideoFile, state.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
+        const use_phone_model = inputsState.vmafModel.includes("Phone");
+        const use_neg_model = inputsState.vmafModel.includes("Neg");
+        if (inputsState.referenceVideoFile !== null) {
+            workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
+            setTimeout(() => {
+                setState(prevState => {
+                    return {
+                        ...prevState,
+                        currentState: "PROCESSING",
+                    };
+                });
+            }, 300);
         }
-    }, [state])
+    }, [state, inputsState])
+
+    const cancelVmafCompute = () => {
+
+    }
 
     function handleReferenceVideoChange(event) {
         if (event.target.files.length > 0) {
-            setState(prevState => {
+            setInputsState(prevState => {
                 return {
                     ...prevState,
                     referenceVideoFilename: presentableFilename(event.target.files[0].name),
                     referenceVideoFile: event.target.files[0],
-                    computedVmafScore: "",
                 };
             });
-            console.log(state);
+            console.log(inputsState);
         }
     }
 
     function handleDistortedVideoChange(event) {
         if (event.target.files.length > 0) {
-            setState(prevState => {
+            setInputsState(prevState => {
                 return {
                     ...prevState,
                     distortedVideoFilename: presentableFilename(event.target.files[0].name),
                     distortedVideoFile: event.target.files[0],
-                    computedVmafScore: "",
                 };
             });
-            console.log(state);
+            console.log(inputsState);
         }
     }
 
     function inputsProvided() {
-        return state.referenceVideoFile !== null &&
-            state.distortedVideoFile !== null;
+        return inputsState.referenceVideoFile !== null &&
+            inputsState.distortedVideoFile !== null;
     }
 
     const referenceButtonText = () => {
-        if (state.referenceVideoFilename.length === 0) {
+        if (inputsState.referenceVideoFilename.length === 0) {
             return <Typography>Reference video</Typography>
         }
         return <Typography
-            color="secondary">{state.referenceVideoFilename}</Typography>
+            color="secondary">{inputsState.referenceVideoFilename}</Typography>
     }
 
     const distortedButtonText = () => {
-        if (state.distortedVideoFilename.length === 0) {
+        if (inputsState.distortedVideoFilename.length === 0) {
             return <Typography>Distorted video</Typography>
         }
         return <Typography
-            color="secondary">{state.distortedVideoFilename}</Typography>
+            color="secondary">{inputsState.distortedVideoFilename}</Typography>
     }
 
     const VmafModelSelect = () => {
         const handleChange = (event) => {
-            setState(prevState => {
+            setInputsState(prevState => {
                 return {
                     ...prevState,
                     vmafModel: event.target.value,
@@ -318,7 +339,7 @@ const Inputs = () => {
                 <Select
                     labelId="demo-select-small"
                     id="demo-select-small"
-                    value={state.vmafModel}
+                    value={inputsState.vmafModel}
                     label="Vmaf Model"
                     onChange={handleChange}
                 >
@@ -333,25 +354,47 @@ const Inputs = () => {
 
 
     const ProgressInfo = () => {
-        if (state.framesProcessed === null) {
+        if (outputsState.framesProcessed === null) {
             return (
                 <Typography color="secondary" variant="subtitle1" marginTop="5px">
                     Select a reference video, a distorted video, and a VMAF model to get started.
                 </Typography>
             )
         }
-        const fps = state.fps.toFixed(2);
+        const fps = outputsState.fps.toFixed(2);
         return (
             <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                {state.framesProcessed} frames {fps} FPS
+                {outputsState.framesProcessed} frames {fps} FPS
             </Typography>
         )
     }
 
     const buttonSize = {maxWidth: '230px', minWidth: '230px', textTransform: 'none'};
 
+    const ComputeOrCancelButton = () => {
+
+        if (state.currentState === "PROCESSING") {
+            return (
+                <Button variant="contained" color="textSecondary"
+                        onClick={computeVmafInWebworker}
+                        style={buttonSize}>
+                    Cancel
+                </Button>
+            )
+        }
+
+
+        return (
+            <Button variant="contained" disabled={!inputsProvided()} color="secondary"
+                    onClick={computeVmafInWebworker}
+                    startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
+                Compute VMAF
+            </Button>
+        )
+    }
+
     return (<>
-        {state.displayFrame === null ? null : <FrameCanvas displayFrame={state.displayFrame}/>}
+        {/*{outputsState.displayFrame === null ? null : <FrameCanvas displayFrame={outputsState.displayFrame}/>}*/}
         {<ProgressInfo/>}
         <Grid container spacing={1} paddingTop={4} justifyContent="center">
             <Grid item xs={3}>
@@ -376,16 +419,12 @@ const Inputs = () => {
                 <VmafModelSelect/>
             </Grid>
             <Grid item xs={4}>
-                <Button variant="contained" disabled={!inputsProvided()} color="secondary"
-                        onClick={computeVmafInWebworker}
-                        startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
-                    Compute VMAF
-                </Button>
+                {<ComputeOrCancelButton/>}
             </Grid>
             <Grid item xs={4}>
-                {state.computedVmafScore.length !== 0 ?
+                {outputsState.pooledVmafScore.length !== 0 ?
                     <Typography variant="h3"
-                                color="textSecondary">Score: {state.computedVmafScore}</Typography>
+                                color="textSecondary">Score: {outputsState.pooledVmafScore}</Typography>
                     :
                     null
                 }
