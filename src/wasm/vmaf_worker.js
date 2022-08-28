@@ -4,13 +4,20 @@ import FrameBuffer from "../frame_buffer";
 
 let ffModule = undefined;
 let vmafScoresBuffer = undefined;
-let frameBuffer = undefined;
+let maxScoreReferenceFrameBuffer = undefined
+let maxScoreDistortedFrameBuffer = undefined;
+let minScoreReferenceFrameBuffer = undefined;
+let minScoreDistortedFrameBuffer = undefined;
+
 Module().then(module => {
     ffModule = module;
     vmafScoresBuffer = new VmafScoresBuffer(ffModule, 10000);
-    frameBuffer = new FrameBuffer(ffModule, 1920 * 1080 * 4);
+    maxScoreReferenceFrameBuffer = new FrameBuffer(ffModule, 480 * 360 * 4);
+    maxScoreDistortedFrameBuffer = new FrameBuffer(ffModule, 480 * 360 * 4);
+    minScoreReferenceFrameBuffer = new FrameBuffer(ffModule, 480 * 360 * 4);
+    minScoreDistortedFrameBuffer = new FrameBuffer(ffModule, 480 * 360 * 4);
+
     console.log('ffModule loaded');
-    console.log('Vmaf version is ' + ffModule.getVmafVersion());
 }).catch(e => {
     console.log('Module() error: ' + e);
 });
@@ -28,8 +35,8 @@ onmessage = function (e) {
 
     ffModule.FS.mkdir('/videos');
     ffModule.FS.mount(ffModule.WORKERFS, {files: [reference_file, test_file]}, '/videos');
-    postMessage([vmafScoresBuffer.getScoreData(), frameBuffer.getFrameData()]);
-    ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, frameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
+    postMessage([vmafScoresBuffer.getScoreData(), maxScoreReferenceFrameBuffer.getFrameData(), maxScoreDistortedFrameBuffer.getFrameData(), minScoreReferenceFrameBuffer.getFrameData(), minScoreDistortedFrameBuffer.getFrameData()]);
+    ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, maxScoreReferenceFrameBuffer.getHeapAddress(), maxScoreDistortedFrameBuffer.getHeapAddress(), minScoreReferenceFrameBuffer.getHeapAddress(), minScoreDistortedFrameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
         use_phone_model, use_neg_model);
     postMessage(["ClearInterval"]);
 }

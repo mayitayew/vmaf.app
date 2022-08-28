@@ -17,7 +17,7 @@ const theme = createTheme({
             main: red.A400,
         },
         background: {
-            default: grey[50],
+            default: '#ffffff',
         },
         typography: {
             fontFamily: "Lato",

@@ -51,7 +51,7 @@ const graphOptions = {
     plugins: {
         title: {
             display: true,
-            text: 'Vmaf Scores Graph',
+            text: 'Vmaf score graph',
         },
     },
 };
@@ -64,7 +64,7 @@ const data = (vmafScores) => {
         labels: labels,
         datasets: [
             {
-                label: "Frame's vmaf score",
+                label: "Vmaf score at frame",
                 pointRadius: 0.5,
                 data: vmafScores.map((x) => x),
                 borderColor: green[500],
@@ -104,81 +104,6 @@ function presentableFilename(filename) {
     return filename.substring(0, 17) + "..";
 }
 
-const FrameCanvas = ({displayFrame}) => {
-    const ref = useRef()
-
-    const canvasStyle = {borderStyle: "solid", borderColor: '#125071', borderWidth: "4px"}
-
-    useEffect(() => {
-        if (ref.current) {
-            const canvas = ref.current.getContext('2d');
-            const clampedArray = Uint8ClampedArray.from(displayFrame);
-            const imgData = new ImageData(clampedArray, 1920);
-          //  canvas.putImageData(imgData, 0, 0);
-          //   const arr = new Uint8ClampedArray(480*360*4);
-          //
-          //   // Fill the array with the same RGBA values
-          //   for (let i = 0; i < arr.length; i += 4) {
-          //       arr[i + 0] = 0;    // R value
-          //       arr[i + 1] = 190;  // G value
-          //       arr[i + 2] = 0;    // B value
-          //       arr[i + 3] = 255;  // A value
-          //   }
-          //
-          //   // Initialize a new ImageData object
-          //   let imageData = new ImageData(arr, 480);
-
-            // Draw image data to the canvas
-            canvas.putImageData(imgData, 0, 0, 0, 0, 1920, 1080);
-
-        }
-    }, [displayFrame])
-
-    return (
-        <Grid container justifyContent="center" spacing={0.5}>
-            <Grid item>
-                <canvas ref={ref} width="1920px" height="1080px" style={canvasStyle}/>
-            </Grid>
-            {/*<Grid item>*/}
-            {/*    <canvas ref={ref} width="480px" height="360px" style={canvasStyle}/>*/}
-            {/*</Grid>*/}
-        </Grid>)
-}
-
-
-const ComparisonCanvas = ({displayFrame}) => {
-
-    const comparisonSlider = {
-        position: "relative",
-        width: "920px",
-        height: "360px",
-        borderWidth: "3px",
-        borderColor: grey[100],
-        borderStyle: "solid"
-    };
-
-    const dividerStyle = {
-        position: "absolute",
-        width: "2px",
-        height: "100%",
-        backgroundColor: grey[100],
-        left: "50%",
-        top: "0",
-        bottom: "0",
-        marginLeft: "-1px",
-    };
-
-    return (
-        <>
-            {/*<div style={comparisonSlider}>*/}
-            <FrameCanvas displayFrame={displayFrame}/>
-            {/*<div style={dividerStyle}/>*/}
-            {/*<FrameCanvas/>*/}
-            {/*</div>*/}
-        </>
-    )
-}
-
 const Inputs = () => {
 
     const [inputsState, setInputsState] = useState(() => {
@@ -198,13 +123,19 @@ const Inputs = () => {
             fps: null,
             framesProcessed: null,
             totalNumFrames: null,
-            displayFrame: null,
+            maxScoreReferenceFrame: null,
+            maxScoreDistortedFrame: null,
+            minScoreReferenceFrame: null,
+            minScoreDistortedFrame: null,
+            outputBuffer: null,
         }
     });
 
     const [state, setState] = useState(() => {
         return {
             showGraph: false,
+            showMaxScoreFrames: false,
+            showMinScoreFrames: false,
             currentState: "NOT_STARTED", // One of [PROCESSING, DONE, NOT_STARTED]
         }
     });
@@ -218,31 +149,47 @@ const Inputs = () => {
                     if (evt.data[0] === "ClearInterval") {
                         console.log("Clearing interval...");
                         clearInterval(intervalRef.current);
+                        setOutputsState(prevState => {
+                            return {
+                                ...prevState,
+                                pooledVmafScore: prevState.outputBuffer[3 + prevState.totalNumFrames],
+                                vmafScores: prevState.outputBuffer.slice(3, 3 + prevState.framesProcessed - 2),
+                            }
+                        })
+
+                        setState(prevState => {
+                            return {
+                                ...prevState,
+                                currentState: "DONE",
+                            }
+                        });
                         return;
                     }
                     return;
                 }
 
                 intervalRef.current = setInterval(() => {
-                    // workerRef.current.postMessage(["RequestingBuffer"]);
-                    setOutputsState(prevState => {
-                        const outputBuffer = evt.data[0];
 
+                    const outputBuffer = evt.data[0];
+
+                    setOutputsState(prevState => {
                         const totalNumFrames = outputBuffer[0];
                         const framesProcessed = outputBuffer[1];
                         const fps = outputBuffer[2];
-                        console.log(fps);
-                        const vmafScores = outputBuffer[3 + framesProcessed];
-
-                        const displayFrame = evt.data[1];
-                        console.log("Frame data is ", displayFrame);
+                        const maxScoreReferenceFrame = evt.data[1];
+                        const maxScoreDistortedFrame = evt.data[2];
+                        const minScoreReferenceFrame = evt.data[3];
+                        const minScoreDistortedFrame = evt.data[4];
                         return {
                             ...prevState,
                             totalNumFrames,
                             framesProcessed,
                             fps,
-                            vmafScores,
-                            displayFrame,
+                            maxScoreReferenceFrame,
+                            maxScoreDistortedFrame,
+                            minScoreReferenceFrame,
+                            minScoreDistortedFrame,
+                            outputBuffer,
                         };
                     });
                 }, 1000);
@@ -275,6 +222,40 @@ const Inputs = () => {
     const cancelVmafCompute = () => {
 
     }
+
+    const showGraph = () => {
+        setState(prevState => {
+            return {
+                ...prevState,
+                showMaxScoreFrames: false,
+                showMinScoreFrames: false,
+                showGraph: true
+            }
+        });
+    }
+
+    const showMaxScoreFrames = () => {
+        setState(prevState => {
+            return {
+                ...prevState,
+                showMinScoreFrames: false,
+                showGraph: false,
+                showMaxScoreFrames: true,
+            }
+        });
+    }
+
+    const showMinScoreFrames = () => {
+        setState(prevState => {
+            return {
+                ...prevState,
+                showMaxScoreFrames: false,
+                showMinScoreFrames: true,
+                showGraph: false,
+            }
+        });
+    }
+
 
     function handleReferenceVideoChange(event) {
         if (event.target.files.length > 0) {
@@ -352,6 +333,37 @@ const Inputs = () => {
         );
     }
 
+    const FrameCanvas = ({leftFrame, rightFrame}) => {
+        const refOne = useRef()
+        const refTwo = useRef()
+
+        const canvasStyle = {borderStyle: "solid", borderColor: '#125071', borderWidth: "2px"}
+
+        useEffect(() => {
+            if (refOne.current && leftFrame !== null) {
+                const canvas = refOne.current.getContext('2d');
+                const clampedArray = Uint8ClampedArray.from(leftFrame);
+                const imgData = new ImageData(clampedArray, 480);
+                canvas.putImageData(imgData, 0, 0);
+            }
+            if (refTwo.current && rightFrame !== null) {
+                const canvas = refTwo.current.getContext('2d');
+                const clampedArray = Uint8ClampedArray.from(rightFrame);
+                const imgData = new ImageData(clampedArray, 480);
+                canvas.putImageData(imgData, 0, 0);
+            }
+        }, [leftFrame, rightFrame])
+
+        return (
+            <Grid container justifyContent="center" spacing={0.5}>
+                <Grid item>
+                    <canvas ref={refOne} width="480px" height="360px" style={canvasStyle}/>
+                </Grid>
+                <Grid item>
+                    <canvas ref={refTwo} width="480px" height="360px" style={canvasStyle}/>
+                </Grid>
+            </Grid>)
+    }
 
     const ProgressInfo = () => {
         if (outputsState.framesProcessed === null) {
@@ -361,19 +373,43 @@ const Inputs = () => {
                 </Typography>
             )
         }
+        if (state.currentState === "DONE") {
+            const vmafScore = outputsState.pooledVmafScore.toFixed(2);
+            return (
+                <Typography color="secondary" variant="subtitle1" marginTop="5px">
+                    Done. Pooled vmaf score: <b>{vmafScore}</b>
+                </Typography>
+            )
+        }
         const fps = outputsState.fps.toFixed(2);
         return (
             <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                {outputsState.framesProcessed} frames {fps} FPS
+                In progress. Processed {outputsState.framesProcessed} of {outputsState.totalNumFrames} frames.
+                Rate: {fps} FPS
             </Typography>
         )
     }
 
+    const DisplayArea = () => {
+        if (state.showGraph) {
+            return (<VmafGraph vmafScores={outputsState.vmafScores}/>);
+        }
+        if (state.showMinScoreFrames) {
+            return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame} rightFrame={outputsState.minScoreDistortedFrame}/>);
+        }
+        if (state.showMaxScoreFrames) {
+            return (<FrameCanvas leftFrame={outputsState.maxScoreReferenceFrame} rightFrame={outputsState.maxScoreReferenceFrame}/>);
+        }
+        return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame} rightFrame={outputsState.minScoreDistortedFrame}/>);
+    }
+
     const buttonSize = {maxWidth: '230px', minWidth: '230px', textTransform: 'none'};
+
+    const thinButtonSize = {maxWidth: '230px', maxHeight: '30px', textTransform: 'none'}
 
     const ComputeOrCancelButton = () => {
 
-        if (state.currentState === "PROCESSING") {
+        if (outputsState.totalNumFrames !== null) {
             return (
                 <Button variant="contained" color="textSecondary"
                         onClick={computeVmafInWebworker}
@@ -382,7 +418,6 @@ const Inputs = () => {
                 </Button>
             )
         }
-
 
         return (
             <Button variant="contained" disabled={!inputsProvided()} color="secondary"
@@ -393,8 +428,39 @@ const Inputs = () => {
         )
     }
 
+    const AdditionalButtons = () => {
+        if (state.currentState !== "DONE") {
+            return (<></>);
+        }
+        return (
+            <Grid container spacing={2} justifyContent="center">
+                <Grid item>
+                    <Button variant="contained" color="primary"
+                            onClick={showMaxScoreFrames}
+                            style={thinButtonSize}>
+                        <Typography>View highest score frame</Typography>
+                    </Button>
+                </Grid>
+                <Grid item>
+                    <Button variant="contained" color="primary"
+                            onClick={showMinScoreFrames}
+                            style={thinButtonSize}>
+                        <Typography>View lowest score frame</Typography>
+                    </Button>
+                </Grid>
+                <Grid item>
+                    <Button variant="contained" color="primary"
+                            onClick={showGraph}
+                            style={thinButtonSize}>
+                        <Typography>View score graph</Typography>
+                    </Button>
+                </Grid>
+            </Grid>
+        )
+    }
+
     return (<>
-        {/*{outputsState.displayFrame === null ? null : <FrameCanvas displayFrame={outputsState.displayFrame}/>}*/}
+        {<DisplayArea/>}
         {<ProgressInfo/>}
         <Grid container spacing={1} paddingTop={4} justifyContent="center">
             <Grid item xs={3}>
@@ -422,12 +488,7 @@ const Inputs = () => {
                 {<ComputeOrCancelButton/>}
             </Grid>
             <Grid item xs={4}>
-                {outputsState.pooledVmafScore.length !== 0 ?
-                    <Typography variant="h3"
-                                color="textSecondary">Score: {outputsState.pooledVmafScore}</Typography>
-                    :
-                    null
-                }
+                <AdditionalButtons/>
             </Grid>
         </Grid>
     </>)
@@ -474,14 +535,14 @@ export default function Landing() {
             <Typography marginLeft="3px" marginTop="auto" marginRight="auto" color="secondary" style={tabStyle}>
                 vmaf.web
             </Typography>
-            <div style={tabListStyle}>
-                <Button style={buttonStyle} variant="contained" color="textSecondary">
-                    About
-                </Button>
-                <Button style={buttonStyle} variant="contained" color="textSecondary">
-                    Give feedback
-                </Button>
-            </div>
+            {/*<div style={tabListStyle}>*/}
+            {/*    <Button style={buttonStyle} variant="contained" color="textSecondary">*/}
+            {/*        About*/}
+            {/*    </Button>*/}
+            {/*    <Button style={buttonStyle} variant="contained" color="textSecondary">*/}
+            {/*        Give feedback*/}
+            {/*    </Button>*/}
+            {/*</div>*/}
         </>
     )
 
