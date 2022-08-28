@@ -136,7 +136,7 @@ const Inputs = () => {
             showGraph: false,
             showMaxScoreFrames: false,
             showMinScoreFrames: false,
-            currentState: "NOT_STARTED", // One of [PROCESSING, DONE, NOT_STARTED]
+            currentState: "NOT_STARTED", // One of [NOT_STARTED, PROCESSING, DONE, CANCELLED]
         }
     });
 
@@ -152,8 +152,8 @@ const Inputs = () => {
                         setOutputsState(prevState => {
                             return {
                                 ...prevState,
-                                pooledVmafScore: prevState.outputBuffer[3 + prevState.totalNumFrames],
-                                vmafScores: prevState.outputBuffer.slice(3, 3 + prevState.framesProcessed - 2),
+                                pooledVmafScore: prevState.outputBuffer[4 + prevState.totalNumFrames],
+                                vmafScores: prevState.outputBuffer.slice(4, 4 + prevState.framesProcessed - 1),
                             }
                         })
 
@@ -206,21 +206,33 @@ const Inputs = () => {
         console.log("Ready to call compute.")
         const use_phone_model = inputsState.vmafModel.includes("Phone");
         const use_neg_model = inputsState.vmafModel.includes("Neg");
-        if (inputsState.referenceVideoFile !== null) {
-            workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
-            setTimeout(() => {
-                setState(prevState => {
-                    return {
-                        ...prevState,
-                        currentState: "PROCESSING",
-                    };
-                });
-            }, 300);
-        }
+        workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
+        setTimeout(() => {
+            setState(prevState => {
+                return {
+                    ...prevState,
+                    currentState: "PROCESSING",
+                };
+            });
+        }, 300);
     }, [state, inputsState])
 
     const cancelVmafCompute = () => {
-
+        outputsState.outputBuffer[3] = -999;
+        setOutputsState(prevState => {
+            return {
+                pooledVmafScore: "",
+                vmafScores: null,
+                fps: null,
+                framesProcessed: null,
+                totalNumFrames: null,
+                maxScoreReferenceFrame: null,
+                maxScoreDistortedFrame: null,
+                minScoreReferenceFrame: null,
+                minScoreDistortedFrame: null,
+                outputBuffer: null,
+            }
+        });
     }
 
     const showGraph = () => {
@@ -384,7 +396,7 @@ const Inputs = () => {
         const fps = outputsState.fps.toFixed(2);
         return (
             <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                In progress. Processed {outputsState.framesProcessed} of {outputsState.totalNumFrames} frames.
+                In progress. Processed {outputsState.framesProcessed} of ~{outputsState.totalNumFrames} frames.
                 Rate: {fps} FPS
             </Typography>
         )
@@ -395,12 +407,15 @@ const Inputs = () => {
             return (<VmafGraph vmafScores={outputsState.vmafScores}/>);
         }
         if (state.showMinScoreFrames) {
-            return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame} rightFrame={outputsState.minScoreDistortedFrame}/>);
+            return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame}
+                                 rightFrame={outputsState.minScoreDistortedFrame}/>);
         }
         if (state.showMaxScoreFrames) {
-            return (<FrameCanvas leftFrame={outputsState.maxScoreReferenceFrame} rightFrame={outputsState.maxScoreReferenceFrame}/>);
+            return (<FrameCanvas leftFrame={outputsState.maxScoreReferenceFrame}
+                                 rightFrame={outputsState.maxScoreReferenceFrame}/>);
         }
-        return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame} rightFrame={outputsState.minScoreDistortedFrame}/>);
+        return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame}
+                             rightFrame={outputsState.minScoreDistortedFrame}/>);
     }
 
     const buttonSize = {maxWidth: '230px', minWidth: '230px', textTransform: 'none'};
@@ -412,7 +427,7 @@ const Inputs = () => {
         if (outputsState.totalNumFrames !== null) {
             return (
                 <Button variant="contained" color="textSecondary"
-                        onClick={computeVmafInWebworker}
+                        onClick={cancelVmafCompute}
                         style={buttonSize}>
                     Cancel
                 </Button>
