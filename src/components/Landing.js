@@ -857,7 +857,7 @@ export default function Landing() {
                             &nbsp; (coming soon) Near native speeds
                         </Typography>
                         <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            Optimized webassembly makes it possible to run compute at speeds close to a native FFmpeg +
+                            Optimized webassembly makes it possible to run on browser at speeds close to a native FFmpeg +
                             VMAF installation.
                         </Typography>
                         <br></br>
