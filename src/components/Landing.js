@@ -225,7 +225,6 @@ const Inputs = () => {
             workerRef.current.onmessage = (evt) => {
                 if (typeof evt.data[0] === 'string') {
                     if (evt.data[0] === "ClearInterval") {
-                        console.log("Clearing interval...");
                         clearInterval(intervalRef.current);
 
                         setOutputsState(prevState => {
@@ -298,7 +297,6 @@ const Inputs = () => {
     );
 
     const computeVmafInWebworker = useCallback(async () => {
-        console.log("Ready to call compute.")
         const use_phone_model = inputsState.vmafModel.includes("Phone");
         const use_neg_model = inputsState.vmafModel.includes("Neg");
         workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
@@ -404,7 +402,6 @@ const Inputs = () => {
                     referenceVideoFile: event.target.files[0],
                 };
             });
-            console.log(inputsState);
         }
     }
 
@@ -417,7 +414,6 @@ const Inputs = () => {
                     distortedVideoFile: event.target.files[0],
                 };
             });
-            console.log(inputsState);
         }
     }
 
