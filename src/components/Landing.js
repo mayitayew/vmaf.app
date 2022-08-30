@@ -747,7 +747,7 @@ export default function Landing() {
         return (
             <Grid container alignItems="baseline" style={footerStyle} spacing={2}>
                 <Grid item>
-                    <Typography variant="subtitle1" color="secondary">© vmaf.web 2022</Typography>
+                    <Typography variant="subtitle1" color="secondary">© vmaf.dev 2022</Typography>
                 </Grid>
             </Grid>
         );
@@ -775,7 +775,7 @@ export default function Landing() {
                     </DialogTitle>
                     <DialogContent>
                         <DialogContentText>
-                            Please email us at <b>contact@vmaf.web</b> with bug reports, feature requests or
+                            Please email us at <b>contact@vmaf.dev</b> with bug reports, feature requests or
                             any comments.
                         </DialogContentText>
                     </DialogContent>
@@ -787,7 +787,7 @@ export default function Landing() {
     const tabs = (
         <>
             <Typography marginLeft="3px" marginTop="auto" marginRight="auto" color="secondary" style={tabStyle}>
-                vmaf.web
+                vmaf.dev
             </Typography>
             <div style={tabListStyle}>
                 <ContactUsButtonAndForm/>
