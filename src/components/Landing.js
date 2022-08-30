@@ -2,14 +2,17 @@ import React, {useEffect, useState, useRef, useCallback} from 'react';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import AppBar from '@mui/material/AppBar';
-import {ThemeProvider, Toolbar, useScrollTrigger} from "@mui/material";
+import {DialogContent, DialogContentText, DialogTitle, ThemeProvider, Toolbar, useScrollTrigger} from "@mui/material";
 import Grid from '@mui/material/Grid';
 import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
 import {CssBaseline} from "@mui/material";
 import VideoFileTwoToneIcon from '@mui/icons-material/VideoFileTwoTone';
 import FunctionsTwoToneIcon from '@mui/icons-material/FunctionsTwoTone';
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import MenuItem from '@mui/material/MenuItem';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import Dialog from '@mui/material/Dialog';
 import logo from '../assets/logo.png';
 import InputLabel from '@mui/material/InputLabel';
 import theme from "./Theme";
@@ -79,7 +82,7 @@ function VmafGraph({vmafScores}) {
     const graphData = data(vmafScores);
     return (
         <Container maxWidth="md">
-            <Line width="854px" height="480px" options={graphOptions} data={graphData}/>
+            <Line width="854px" height="360px" options={graphOptions} data={graphData}/>
         </Container>);
 }
 
@@ -106,6 +109,79 @@ function presentableFilename(filename) {
 
 const Inputs = () => {
 
+    const [selectedState, setSelectedState] = useState(() => {
+        return {
+            computeVmaf: true,
+            encodingLadder: false,
+        }
+    })
+
+    const SelectStateTabs = () => {
+
+        const selectStyle = {marginBottom: "20px"}
+
+        const tabButtonStyle = {
+            fontSize: "1.125rem",
+            lineHeight: "1.75rem",
+            color: grey[600],
+            textTransform: "none",
+        }
+
+        const handleComputeVmafTabClick = () => {
+            setSelectedState(prevState => {
+                return {
+                    computeVmaf: true,
+                    encodingLadder: false,
+                }
+            })
+        }
+
+        const handleEncodingLadderTabClick = () => {
+            setSelectedState(prevState => {
+                return {
+                    computeVmaf: false,
+                    encodingLadder: true,
+                }
+            })
+        }
+
+        const selectedTabButtonStyle = {
+            fontSize: "1.125rem",
+            fontWeight: 700,
+            lineHeight: "1.75rem",
+            color: theme.palette.secondary.main,
+            textTransform: "none",
+        }
+
+        if (selectedState.computeVmaf === true) {
+            return (
+                <Grid container spacing={3} justifyContent="center" style={selectStyle}>
+                    <Grid item>
+                        <Button variant="outlined" style={selectedTabButtonStyle} onClick={handleComputeVmafTabClick}>Compute
+                            VMAF</Button>
+                    </Grid>
+                    <Grid item>
+                        <Button variant="outlined" style={tabButtonStyle}
+                                onClick={handleEncodingLadderTabClick}>Encoding ladder</Button>
+                    </Grid>
+                </Grid>
+            )
+        }
+
+        return (
+            <Grid container spacing={3} justifyContent="center" style={selectStyle}>
+                <Grid item>
+                    <Button variant="outlined" style={tabButtonStyle} onClick={handleComputeVmafTabClick}>Compute
+                        VMAF</Button>
+                </Grid>
+                <Grid item>
+                    <Button variant="outlined" style={selectedTabButtonStyle}
+                            onClick={handleEncodingLadderTabClick}>Encoding ladder</Button>
+                </Grid>
+            </Grid>
+        )
+    }
+
     const [inputsState, setInputsState] = useState(() => {
         return {
             referenceVideoFilename: "",
@@ -119,6 +195,8 @@ const Inputs = () => {
     const [outputsState, setOutputsState] = useState(() => {
         return {
             pooledVmafScore: "",
+            maxVmafScore: "",
+            minVmafScore: "",
             vmafScores: null,
             fps: null,
             framesProcessed: null,
@@ -136,7 +214,7 @@ const Inputs = () => {
             showGraph: false,
             showMaxScoreFrames: false,
             showMinScoreFrames: false,
-            currentState: "NOT_STARTED", // One of [NOT_STARTED, PROCESSING, DONE, CANCELLED]
+            currentState: "NOT_STARTED", // One of [NOT_STARTED, PROCESSING, DONE]
         }
     });
 
@@ -149,24 +227,41 @@ const Inputs = () => {
                     if (evt.data[0] === "ClearInterval") {
                         console.log("Clearing interval...");
                         clearInterval(intervalRef.current);
+
                         setOutputsState(prevState => {
+                            const pooledVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[4 + prevState.totalNumFrames];
+                            const maxVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[5 + prevState.totalNumFrames];
+                            const minVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[6 + prevState.totalNumFrames];
+                            const vmafScores = prevState.outputBuffer === null ? null : prevState.outputBuffer.slice(4, 4 + prevState.framesProcessed - 2);
                             return {
                                 ...prevState,
-                                pooledVmafScore: prevState.outputBuffer[4 + prevState.totalNumFrames],
-                                vmafScores: prevState.outputBuffer.slice(4, 4 + prevState.framesProcessed - 1),
+                                pooledVmafScore,
+                                maxVmafScore,
+                                minVmafScore,
+                                vmafScores,
                             }
                         })
 
                         setState(prevState => {
+                            const newState = prevState.currentState === "PROCESSING" ? "DONE" : "NOT_STARTED";
                             return {
                                 ...prevState,
-                                currentState: "DONE",
+                                currentState: newState,
                             }
                         });
                         return;
                     }
                     return;
                 }
+
+                setTimeout(() => {
+                    setState(prevState => {
+                        return {
+                            ...prevState,
+                            currentState: "PROCESSING"
+                        }
+                    })
+                }, 500);
 
                 intervalRef.current = setInterval(() => {
 
@@ -207,21 +302,52 @@ const Inputs = () => {
         const use_phone_model = inputsState.vmafModel.includes("Phone");
         const use_neg_model = inputsState.vmafModel.includes("Neg");
         workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
-        setTimeout(() => {
-            setState(prevState => {
-                return {
-                    ...prevState,
-                    currentState: "PROCESSING",
-                };
-            });
-        }, 300);
     }, [state, inputsState])
 
     const cancelVmafCompute = () => {
         outputsState.outputBuffer[3] = -999;
+        setState(prevState => {
+            return {
+                currentState: "NOT_STARTED",
+                showMaxScoreFrames: false,
+                showGraph: false,
+                showMinScoreFrames: false,
+            }
+        });
+
         setOutputsState(prevState => {
             return {
                 pooledVmafScore: "",
+                maxVmafScore: "",
+                minVmafScore: "",
+                vmafScores: null,
+                fps: null,
+                framesProcessed: null,
+                totalNumFrames: null,
+                maxScoreReferenceFrame: null,
+                maxScoreDistortedFrame: null,
+                minScoreReferenceFrame: null,
+                minScoreDistortedFrame: null,
+                outputBuffer: null,
+            }
+        });
+    }
+
+    const computeDone = () => {
+        setState(prevState => {
+            return {
+                currentState: "NOT_STARTED",
+                showMaxScoreFrames: false,
+                showGraph: false,
+                showMinScoreFrames: false,
+            }
+        });
+
+        setOutputsState(prevState => {
+            return {
+                pooledVmafScore: "",
+                maxVmafScore: "",
+                minVmafScore: "",
                 vmafScores: null,
                 fps: null,
                 framesProcessed: null,
@@ -327,7 +453,7 @@ const Inputs = () => {
         };
 
         return (
-            <FormControl sx={{m: 1, minWidth: 120}} size="small">
+            <FormControl sx={{m: 1, minWidth: 180}} size="small">
                 <InputLabel id="demo-select-small">Vmaf Model</InputLabel>
                 <Select
                     labelId="demo-select-small"
@@ -378,28 +504,36 @@ const Inputs = () => {
     }
 
     const ProgressInfo = () => {
-        if (outputsState.framesProcessed === null) {
+        if (state.currentState === "NOT_STARTED") {
             return (
                 <Typography color="secondary" variant="subtitle1" marginTop="5px">
                     Select a reference video, a distorted video, and a VMAF model to get started.
                 </Typography>
             )
         }
+
         if (state.currentState === "DONE") {
-            const vmafScore = outputsState.pooledVmafScore.toFixed(2);
+            const pooledScore = outputsState.pooledVmafScore.toFixed(2);
+            const highestScore = outputsState.maxVmafScore.toFixed(2);
+            const lowestScore = outputsState.minVmafScore.toFixed(2);
             return (
                 <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                    Done. Pooled vmaf score: <b>{vmafScore}</b>
+                    Done. Highest score: <b>{highestScore}</b>, Lowest score: <b>{lowestScore}</b> Pooled score: <b>{pooledScore}</b>
                 </Typography>
             )
         }
-        const fps = outputsState.fps.toFixed(2);
-        return (
-            <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                In progress. Processed {outputsState.framesProcessed} of ~{outputsState.totalNumFrames} frames.
-                Rate: {fps} FPS
-            </Typography>
-        )
+
+        if (state.currentState === "PROCESSING") {
+            const fps = outputsState.fps === null ? 0 : outputsState.fps.toFixed(2);
+            const framesProcessed = outputsState.framesProcessed === null ? 0 : outputsState.framesProcessed;
+            const totalNumFrames = outputsState.totalNumFrames === null ? "unknown" : outputsState.totalNumFrames;
+            return (
+                <Typography color="secondary" variant="subtitle1" marginTop="5px">
+                    Processed {framesProcessed} of ~{totalNumFrames} frame pairs.
+                    Rate: {fps} FPS
+                </Typography>
+            )
+        }
     }
 
     const DisplayArea = () => {
@@ -424,23 +558,37 @@ const Inputs = () => {
 
     const ComputeOrCancelButton = () => {
 
-        if (outputsState.totalNumFrames !== null) {
+        if (state.currentState === "PROCESSING") {
             return (
                 <Button variant="contained" color="textSecondary"
                         onClick={cancelVmafCompute}
                         style={buttonSize}>
-                    Cancel
+                    In progress. Click to cancel
                 </Button>
             )
         }
 
-        return (
-            <Button variant="contained" disabled={!inputsProvided()} color="secondary"
-                    onClick={computeVmafInWebworker}
-                    startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
-                Compute VMAF
-            </Button>
-        )
+        if (state.currentState === "NOT_STARTED") {
+            return (
+                <Button variant="contained" disabled={!inputsProvided()} color="secondary"
+                        onClick={computeVmafInWebworker}
+                        startIcon={<FunctionsTwoToneIcon/>} style={buttonSize}>
+                    Compute VMAF
+                </Button>
+            )
+        }
+
+        if (state.currentState === "DONE") {
+            return (
+                <Button variant="contained" color="secondary"
+                        onClick={computeDone}
+                        style={buttonSize}>
+                    Done
+                </Button>
+            )
+        }
+
+
     }
 
     const AdditionalButtons = () => {
@@ -474,39 +622,63 @@ const Inputs = () => {
         )
     }
 
+
+    const ComputeVmafUI = () => {
+        return (
+            <>
+                {<DisplayArea/>}
+                {<ProgressInfo/>}
+                <Grid container spacing={1} paddingTop={4} justifyContent="center">
+                    <Grid item xs={3}>
+                        <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
+                                startIcon={<VideoFileTwoToneIcon/>}>
+                            {referenceButtonText()}
+                        </Button>
+                        <input hidden accept="video/mp4" type="file" id="reference-video-upload"
+                               onChange={handleReferenceVideoChange}/>
+                    </Grid>
+                    <Grid item xs={3}>
+                        <Button style={buttonSize} for="distorted-video-upload" variant="contained" component="label"
+                                startIcon={<VideoFileTwoToneIcon/>}>
+                            {distortedButtonText()}
+                        </Button>
+                        <input hidden accept="video/mp4" type="file" id="distorted-video-upload"
+                               onChange={handleDistortedVideoChange}/>
+                    </Grid>
+                </Grid>
+                <Grid container spacing={1} paddingTop={2} justifyContent="center" direction="column"
+                      alignItems="center">
+                    <Grid item xs={4}>
+                        <VmafModelSelect/>
+                    </Grid>
+                    <Grid item xs={4}>
+                        {<ComputeOrCancelButton/>}
+                    </Grid>
+                    <Grid item xs={4}>
+                        <AdditionalButtons/>
+                    </Grid>
+                </Grid>
+            </>
+        )
+    }
+
+    const EncodingLadderComingSoonUI = () => {
+        return (
+            <Grid container direction="column">
+                <Grid item>
+                    <Typography variant="h4">Coming Soon!</Typography>
+                </Grid>
+            </Grid>
+        )
+    }
+
     return (<>
-        {<DisplayArea/>}
-        {<ProgressInfo/>}
-        <Grid container spacing={1} paddingTop={4} justifyContent="center">
-            <Grid item xs={3}>
-                <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
-                        startIcon={<VideoFileTwoToneIcon/>}>
-                    {referenceButtonText()}
-                </Button>
-                <input hidden accept="video/mp4" type="file" id="reference-video-upload"
-                       onChange={handleReferenceVideoChange}/>
-            </Grid>
-            <Grid item xs={3}>
-                <Button style={buttonSize} for="distorted-video-upload" variant="contained" component="label"
-                        startIcon={<VideoFileTwoToneIcon/>}>
-                    {distortedButtonText()}
-                </Button>
-                <input hidden accept="video/mp4" type="file" id="distorted-video-upload"
-                       onChange={handleDistortedVideoChange}/>
-            </Grid>
-        </Grid>
-        <Grid container spacing={1} paddingTop={2} justifyContent="center" direction="column" alignItems="center">
-            <Grid item xs={4}>
-                <VmafModelSelect/>
-            </Grid>
-            <Grid item xs={4}>
-                {<ComputeOrCancelButton/>}
-            </Grid>
-            <Grid item xs={4}>
-                <AdditionalButtons/>
-            </Grid>
-        </Grid>
-    </>)
+        {/*{<SelectStateTabs/>}*/}
+        {selectedState.computeVmaf ?
+            <ComputeVmafUI/>
+                : <EncodingLadderComingSoonUI/>}
+        </>
+    )
 }
 
 export default function Landing() {
@@ -526,8 +698,6 @@ export default function Landing() {
 
     const tabListStyle = {marginLeft: "25px", textTransform: "none"};
 
-    const featurePointStyle = {marginBottom: "1rem"}
-
     const buttonStyle = {
         borderRadius: "5px",
         marginRight: "25px",
@@ -545,19 +715,87 @@ export default function Landing() {
         paddingX: "30px"
     };
 
+    const heroStyle = {
+        marginTop: "40px",
+        marginBottom: "40px"
+    }
+
+    const titleStyle = {
+        fontSize: "2.25rem",
+        lineHeight: "2.5rem",
+        fontWeight: 700,
+    }
+
+    const subtitleStyle = {
+        fontSize: "1.125rem",
+        lineHeight: "1.75rem",
+        color: grey[600],
+    }
+
+    const featurePointStyle = {
+        fontSize: "1.0rem",
+        lineHeight: "1.3rem",
+        color: grey[600],
+    }
+
+    const Footer = () => {
+        const footerStyle = {
+            marginTop: "calc(5% + 30px)",
+            bottom: 0,
+            borderTopWidth: "1px",
+            borderTopStyle: "solid",
+            borderTopColor: grey[200],
+            height: "50px"
+        }
+
+        return (
+            <Grid container alignItems="baseline" style={footerStyle} spacing={2}>
+                <Grid item>
+                    <Typography variant="subtitle1" color="secondary">© vmaf.web 2022</Typography>
+                </Grid>
+            </Grid>
+        );
+    }
+
+    const [contactFormOpen, setContactFormOpen] = useState(false);
+
+    const handleClickOpen = () => {
+        setContactFormOpen(true);
+    }
+
+    const handleClose = () => {
+        setContactFormOpen(false);
+    }
+
+    const ContactUsButtonAndForm = () => {
+        return (
+            <>
+                <Button style={buttonStyle} variant="contained" color="primary" onClick={handleClickOpen}>
+                    Contact us
+                </Button>
+                <Dialog open={contactFormOpen} onClose={handleClose}>
+                    <DialogTitle>
+                        {"We want to hear from you!"}
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            Please email us at <b>contact@vmaf.web</b> with bug reports, feature requests or
+                            any comments.
+                        </DialogContentText>
+                    </DialogContent>
+                </Dialog>
+            </>
+        )
+    }
+
     const tabs = (
         <>
             <Typography marginLeft="3px" marginTop="auto" marginRight="auto" color="secondary" style={tabStyle}>
                 vmaf.web
             </Typography>
-            {/*<div style={tabListStyle}>*/}
-            {/*    <Button style={buttonStyle} variant="contained" color="textSecondary">*/}
-            {/*        About*/}
-            {/*    </Button>*/}
-            {/*    <Button style={buttonStyle} variant="contained" color="textSecondary">*/}
-            {/*        Give feedback*/}
-            {/*    </Button>*/}
-            {/*</div>*/}
+            <div style={tabListStyle}>
+                <ContactUsButtonAndForm/>
+            </div>
         </>
     )
 
@@ -576,12 +814,70 @@ export default function Landing() {
                     </AppBar>
                 </ElevationScroll>
 
-                {/*<LeftSideContent/>*/}
+                <Grid container spacing={2} justifyContent="space-around" style={heroStyle}>
+                    <Grid item xs={5}>
+                        <Grid container direction="column" spacing={2}>
+                            <Grid item>
+                                <Typography variant="h4" align="left" style={titleStyle}>Measure video quality and make
+                                    encoding decisions from your web browser.</Typography>
+                            </Grid>
+                            <Grid item>
+                                <Typography variant="subtitle1" align="left" style={subtitleStyle}>Estimate the optimal
+                                    encoding ladder for your videos and compute VMAF scores.
+                                    Video encoding tools on browser that work at native app speeds. <b>Get started
+                                        below.</b></Typography>
+                            </Grid>
+                            <Grid item>
+                                <Grid container spacing={2}>
+                                    {/*<Grid item>*/}
+                                    {/*    <Button color="secondary" variant="contained">*/}
+                                    {/*        Get Started*/}
+                                    {/*    </Button>*/}
+                                    {/*</Grid>*/}
+                                    {/*<Grid item>*/}
+                                    {/*    <Button color="primary" variant="contained">*/}
+                                    {/*        Learn more*/}
+                                    {/*    </Button>*/}
+                                    {/*</Grid>*/}
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                    <Grid item xs={5} marginTop="1em">
+                        <Typography variant="h6" color="textPrimary" align="left">
+                            <CheckCircleIcon color="secondary" fontSize="small"/>
+                            &nbsp;Entirely on browser
+                        </Typography>
+                        <Typography style={featurePointStyle} align="left">
+                            Everything happens on your browser. No data from your videos is shared with our servers.
+                        </Typography>
+                        <br></br>
+                        <Typography variant="h6" color="textPrimary" align="left">
+                            <RocketLaunchIcon color="comingSoon" fontSize="small"/>
+                            &nbsp; (coming soon) Near native speeds
+                        </Typography>
+                        <Typography variant="subtitle1" style={featurePointStyle} align="left">
+                            Optimized webassembly makes it possible to run compute at speeds close to a native FFmpeg +
+                            VMAF installation.
+                        </Typography>
+                        <br></br>
+                        <Typography variant="h6" color="textPrimary" align="left">
+                            <RocketLaunchIcon color="comingSoon" fontSize="small"/>
+                            &nbsp; (coming soon) Content-aware encoding ladder
+                        </Typography>
+                        <Typography variant="subtitle1" style={featurePointStyle} align="left">
+                            Uses machine learning to quickly determine the optimal bitrate for each video and
+                            resolution.
+                            No need to do test encodes.
+                        </Typography>
+                    </Grid>
+                </Grid>
 
                 <Grid container style={innerContainerStyle} direction="column" justifyContent="center"
                       alignItems="center">
                     <Inputs/>
                 </Grid>
+                <Footer/>
             </Container>
         </ThemeProvider>
     );

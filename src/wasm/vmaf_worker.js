@@ -38,5 +38,6 @@ onmessage = function (e) {
     postMessage([vmafScoresBuffer.getScoreData(), maxScoreReferenceFrameBuffer.getFrameData(), maxScoreDistortedFrameBuffer.getFrameData(), minScoreReferenceFrameBuffer.getFrameData(), minScoreDistortedFrameBuffer.getFrameData()]);
     ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, maxScoreReferenceFrameBuffer.getHeapAddress(), maxScoreDistortedFrameBuffer.getHeapAddress(), minScoreReferenceFrameBuffer.getHeapAddress(), minScoreDistortedFrameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
         use_phone_model, use_neg_model);
+    ffModule.FS.unmount('/videos');
     postMessage(["ClearInterval"]);
 }

@@ -13,6 +13,9 @@ const theme = createTheme({
         textSecondary: {
             main: grey[300],
         },
+        comingSoon: {
+            main: red[400],
+        },
         error: {
             main: red.A400,
         },
