@@ -352,6 +352,7 @@ const Inputs = () => {
                 showMaxScoreFrames: false,
                 showGraph: false,
                 showMinScoreFrames: false,
+                errorMessage: "",
             }
         });
 
@@ -381,8 +382,8 @@ const Inputs = () => {
                 showMaxScoreFrames: false,
                 showGraph: false,
                 showMinScoreFrames: false,
+                errorMessage: "",
             }
-            console.log("State is ", "NOT_STARTED");
         });
 
         setOutputsState(prevState => {
@@ -547,9 +548,8 @@ const Inputs = () => {
         if (state.currentState === "NOT_STARTED") {
             return (
                 <>
+                    {state.errorMessage.length === 0 ? null : <Typography color="error" variant="subtitle2">Error: {state.errorMessage}</Typography>}
                     <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                        Errored: {state.errorMessage}
-                        <br/>
                         Select a reference video, a distorted video, and a VMAF model to get started.
                     </Typography>
                     <Typography color="secondary" variant="subtitle1" marginTop="3px">
@@ -688,7 +688,7 @@ const Inputs = () => {
                                 startIcon={<VideoFileTwoToneIcon/>}>
                             {referenceButtonText()}
                         </Button>
-                        <input hidden accept="video/mp4,video/x-m4v,video/*" type="file" id="reference-video-upload"
+                        <input hidden accept="*" type="file" id="reference-video-upload"
                                onChange={handleReferenceVideoChange}/>
                     </Grid>
                     <Grid item xs={3}>
@@ -696,7 +696,7 @@ const Inputs = () => {
                                 startIcon={<VideoFileTwoToneIcon/>}>
                             {distortedButtonText()}
                         </Button>
-                        <input hidden accept="video/mp4,video/x-m4v,video/*" type="file" id="distorted-video-upload"
+                        <input hidden accept="*" type="file" id="distorted-video-upload"
                                onChange={handleDistortedVideoChange}/>
                     </Grid>
                 </Grid>
@@ -934,7 +934,7 @@ export default function Landing() {
                             </Grid>
                             <Grid item>
                                 <Typography variant="subtitle1" align="left" style={subtitleStyle}>
-                                    Video encoding tools on browser that improve your video workflow. <b>Get started
+                                    Video encoding tools on browser that improve your workflow. <b>Get started
                                     below.</b>
                                 </Typography>
                             </Grid>
