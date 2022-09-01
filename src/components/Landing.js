@@ -2,7 +2,15 @@ import React, {useEffect, useState, useRef, useCallback} from 'react';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import AppBar from '@mui/material/AppBar';
-import {DialogContent, DialogContentText, DialogTitle, ThemeProvider, Toolbar, useScrollTrigger} from "@mui/material";
+import {
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    TextField,
+    ThemeProvider,
+    Toolbar,
+    useScrollTrigger
+} from "@mui/material";
 import Grid from '@mui/material/Grid';
 import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
@@ -18,6 +26,7 @@ import InputLabel from '@mui/material/InputLabel';
 import theme from "./Theme";
 import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
+import emailjs from 'emailjs-com';
 
 import {
     Chart as ChartJS,
@@ -192,6 +201,15 @@ const Inputs = () => {
         }
     });
 
+    const [state, setState] = useState(() => {
+        return {
+            showGraph: false,
+            showMaxScoreFrames: false,
+            showMinScoreFrames: false,
+            currentState: "NOT_STARTED", // One of [NOT_STARTED, IN_PROGRESS, DONE]
+        }
+    });
+
     const [outputsState, setOutputsState] = useState(() => {
         return {
             pooledVmafScore: "",
@@ -209,15 +227,6 @@ const Inputs = () => {
         }
     });
 
-    const [state, setState] = useState(() => {
-        return {
-            showGraph: false,
-            showMaxScoreFrames: false,
-            showMinScoreFrames: false,
-            currentState: "NOT_STARTED", // One of [NOT_STARTED, PROCESSING, DONE]
-        }
-    });
-
     const workerRef = useRef()
     const intervalRef = useRef()
     useEffect(() => {
@@ -226,6 +235,15 @@ const Inputs = () => {
                 if (typeof evt.data[0] === 'string') {
                     if (evt.data[0] === "ClearInterval") {
                         clearInterval(intervalRef.current);
+
+                        setState(prevState => {
+                            const newState = prevState.currentState === "IN_PROGRESS" ? "DONE" : "NOT_STARTED";
+                            return {
+                                ...prevState,
+                                currentState: newState,
+                            }
+                            console.log("State is ", newState);
+                        });
 
                         setOutputsState(prevState => {
                             const pooledVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[4 + prevState.totalNumFrames];
@@ -241,13 +259,6 @@ const Inputs = () => {
                             }
                         })
 
-                        setState(prevState => {
-                            const newState = prevState.currentState === "PROCESSING" ? "DONE" : "NOT_STARTED";
-                            return {
-                                ...prevState,
-                                currentState: newState,
-                            }
-                        });
                         return;
                     }
                     return;
@@ -257,8 +268,9 @@ const Inputs = () => {
                     setState(prevState => {
                         return {
                             ...prevState,
-                            currentState: "PROCESSING"
+                            currentState: "IN_PROGRESS"
                         }
+                        console.log("State is ", "IN_PROGRESS");
                     })
                 }, 500);
 
@@ -302,7 +314,9 @@ const Inputs = () => {
         workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
     }, [state, inputsState])
 
-    const cancelVmafCompute = () => {
+
+    // This transitions the state from "IN_PROGRESS" to "NOT_STARTED."
+    const handleCancelButtonClick = () => {
         outputsState.outputBuffer[3] = -999;
         setState(prevState => {
             return {
@@ -311,6 +325,7 @@ const Inputs = () => {
                 showGraph: false,
                 showMinScoreFrames: false,
             }
+            console.log("State is ", "NOT_STARTED");
         });
 
         setOutputsState(prevState => {
@@ -331,7 +346,8 @@ const Inputs = () => {
         });
     }
 
-    const computeDone = () => {
+    // This transitions state from "DONE" to "NOT_STARTED".
+    const handleDoneButtonClick = () => {
         setState(prevState => {
             return {
                 currentState: "NOT_STARTED",
@@ -339,6 +355,7 @@ const Inputs = () => {
                 showGraph: false,
                 showMinScoreFrames: false,
             }
+            console.log("State is ", "NOT_STARTED");
         });
 
         setOutputsState(prevState => {
@@ -502,9 +519,15 @@ const Inputs = () => {
     const ProgressInfo = () => {
         if (state.currentState === "NOT_STARTED") {
             return (
-                <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                    Select a reference video, a distorted video, and a VMAF model to get started.
-                </Typography>
+                <>
+                    <Typography color="secondary" variant="subtitle1" marginTop="5px">
+                        Select a reference video, a distorted video, and a VMAF model to get started.
+                    </Typography>
+                    <Typography color="secondary" variant="subtitle1" marginTop="5px">
+                        <b>Video formats:</b> mp4, webm and more. <b>Codecs:</b> h264, vp8, vp9 and more. <b>Auto
+                        rescaling.</b>
+                    </Typography>
+                </>
             )
         }
 
@@ -514,12 +537,13 @@ const Inputs = () => {
             const lowestScore = outputsState.minVmafScore.toFixed(2);
             return (
                 <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                    Done. Highest score: <b>{highestScore}</b>, Lowest score: <b>{lowestScore}</b> Pooled score: <b>{pooledScore}</b>
+                    Done. Highest score: <b>{highestScore}</b>, Lowest score: <b>{lowestScore}</b> Pooled
+                    score: <b>{pooledScore}</b>
                 </Typography>
             )
         }
 
-        if (state.currentState === "PROCESSING") {
+        if (state.currentState === "IN_PROGRESS") {
             const fps = outputsState.fps === null ? 0 : outputsState.fps.toFixed(2);
             const framesProcessed = outputsState.framesProcessed === null ? 0 : outputsState.framesProcessed;
             const totalNumFrames = outputsState.totalNumFrames === null ? "unknown" : outputsState.totalNumFrames;
@@ -544,6 +568,10 @@ const Inputs = () => {
             return (<FrameCanvas leftFrame={outputsState.maxScoreReferenceFrame}
                                  rightFrame={outputsState.maxScoreReferenceFrame}/>);
         }
+        if (state.currentState === "NOT_STARTED") {
+            return (<FrameCanvas leftFrame={null}
+                                 rightFrame={null}/>);
+        }
         return (<FrameCanvas leftFrame={outputsState.minScoreReferenceFrame}
                              rightFrame={outputsState.minScoreDistortedFrame}/>);
     }
@@ -554,10 +582,10 @@ const Inputs = () => {
 
     const ComputeOrCancelButton = () => {
 
-        if (state.currentState === "PROCESSING") {
+        if (state.currentState === "IN_PROGRESS") {
             return (
                 <Button variant="contained" color="textSecondary"
-                        onClick={cancelVmafCompute}
+                        onClick={handleCancelButtonClick}
                         style={buttonSize}>
                     In progress. Click to cancel
                 </Button>
@@ -577,7 +605,7 @@ const Inputs = () => {
         if (state.currentState === "DONE") {
             return (
                 <Button variant="contained" color="secondary"
-                        onClick={computeDone}
+                        onClick={handleDoneButtonClick}
                         style={buttonSize}>
                     Done
                 </Button>
@@ -630,7 +658,7 @@ const Inputs = () => {
                                 startIcon={<VideoFileTwoToneIcon/>}>
                             {referenceButtonText()}
                         </Button>
-                        <input hidden accept="video/mp4" type="file" id="reference-video-upload"
+                        <input hidden accept="video/mp4,video/x-m4v,video/*" type="file" id="reference-video-upload"
                                onChange={handleReferenceVideoChange}/>
                     </Grid>
                     <Grid item xs={3}>
@@ -638,7 +666,7 @@ const Inputs = () => {
                                 startIcon={<VideoFileTwoToneIcon/>}>
                             {distortedButtonText()}
                         </Button>
-                        <input hidden accept="video/mp4" type="file" id="distorted-video-upload"
+                        <input hidden accept="video/mp4,video/x-m4v,video/*" type="file" id="distorted-video-upload"
                                onChange={handleDistortedVideoChange}/>
                     </Grid>
                 </Grid>
@@ -669,9 +697,9 @@ const Inputs = () => {
     }
 
     return (<>
-        {/*{<SelectStateTabs/>}*/}
-        {selectedState.computeVmaf ?
-            <ComputeVmafUI/>
+            {/*{<SelectStateTabs/>}*/}
+            {selectedState.computeVmaf ?
+                <ComputeVmafUI/>
                 : <EncodingLadderComingSoonUI/>}
         </>
     )
@@ -764,6 +792,51 @@ export default function Landing() {
     }
 
     const ContactUsButtonAndForm = () => {
+
+        const [textInput, setTextInput] = useState(() => {
+            return {
+                name: "",
+                message: "",
+            }
+        })
+
+        const handleNameChange = (event) => {
+            setTextInput(prevState => {
+                return {
+                    ...prevState,
+                    name: event.target.value,
+                }
+            })
+        }
+
+        const handleMessageChange = (event) => {
+            setTextInput(prevState => {
+                return {
+                    ...prevState,
+                    message: event.target.value,
+                }
+            })
+        }
+
+        const handleSubmit = () => {
+
+            const templateParams = {
+                name: textInput.name,
+                message: textInput.message
+            };
+
+            emailjs.send("service_3d7ir4k", "template_b9kucgq", templateParams, "DJeDniig9Q8qao638").then(() => {
+                console.log("Message sent.");
+            }, (error) => {
+                console.log(error.text);
+            });
+            handleClose();
+        }
+
+        const inputsProvided = () => {
+            return textInput.name.length !== 0 && textInput.message.length !== 0;
+        }
+
         return (
             <>
                 <Button style={buttonStyle} variant="contained" color="primary" onClick={handleClickOpen}>
@@ -775,9 +848,21 @@ export default function Landing() {
                     </DialogTitle>
                     <DialogContent>
                         <DialogContentText>
-                            Please email us at <b>contact@vmaf.dev</b> with bug reports, feature requests or
+                            You can also email us at <b>contact@vmaf.dev</b> with bug reports, feature requests or
                             any comments.
                         </DialogContentText>
+                        <Grid container direction="column" marginTop="5px" spacing={2}>
+                            <Grid item>
+                                <TextField label="Name" required onChange={handleNameChange}/>
+                            </Grid>
+                            <Grid item>
+                                <TextField label="Message" required fullWidth onChange={handleMessageChange}/>
+                            </Grid>
+                            <Grid item>
+                                <Button variant="contained" disabled={!inputsProvided()}
+                                        onClick={handleSubmit}>Submit</Button>
+                            </Grid>
+                        </Grid>
                     </DialogContent>
                 </Dialog>
             </>
@@ -814,14 +899,13 @@ export default function Landing() {
                     <Grid item xs={5}>
                         <Grid container direction="column" spacing={2}>
                             <Grid item>
-                                <Typography variant="h4" align="left" style={titleStyle}>Measure video quality and make
-                                    encoding decisions from your web browser.</Typography>
+                                <Typography variant="h4" align="left" style={titleStyle}>Measure video quality from your
+                                    web browser.</Typography>
                             </Grid>
                             <Grid item>
-                                <Typography variant="subtitle1" align="left" style={subtitleStyle}>Estimate the optimal
-                                    encoding ladder for your videos and compute VMAF scores.
-                                    Video encoding tools on browser that work at native app speeds. <b>Get started
-                                        below.</b></Typography>
+                                <Typography variant="subtitle1" align="left" style={subtitleStyle}>
+                                    Video encoding tools on browser that improve your video workflow. <b>Get started below.</b>
+                                </Typography>
                             </Grid>
                             <Grid item>
                                 <Grid container spacing={2}>
@@ -850,22 +934,21 @@ export default function Landing() {
                         <br></br>
                         <Typography variant="h6" color="textPrimary" align="left">
                             <RocketLaunchIcon color="comingSoon" fontSize="small"/>
-                            &nbsp; (coming soon) Near native speeds
+                            &nbsp; (coming soon) Native app speeds
                         </Typography>
                         <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            Optimized webassembly makes it possible to run on browser at speeds close to a native FFmpeg +
-                            VMAF installation.
+                            Optimized webassembly makes it possible to run your workflow on browser at the speed of on-device software.
                         </Typography>
-                        <br></br>
-                        <Typography variant="h6" color="textPrimary" align="left">
-                            <RocketLaunchIcon color="comingSoon" fontSize="small"/>
-                            &nbsp; (coming soon) Content-aware encoding ladder
-                        </Typography>
-                        <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            Uses machine learning to quickly determine the optimal bitrate for each video and
-                            resolution.
-                            No need to do test encodes.
-                        </Typography>
+                        {/*<br></br>*/}
+                        {/*<Typography variant="h6" color="textPrimary" align="left">*/}
+                        {/*    <RocketLaunchIcon color="comingSoon" fontSize="small"/>*/}
+                        {/*    &nbsp; (coming soon) Content-aware encoding ladder*/}
+                        {/*</Typography>*/}
+                        {/*<Typography variant="subtitle1" style={featurePointStyle} align="left">*/}
+                        {/*    Uses machine learning to quickly determine the optimal bitrate for each video and*/}
+                        {/*    resolution.*/}
+                        {/*    No need to do test encodes.*/}
+                        {/*</Typography>*/}
                     </Grid>
                 </Grid>
 

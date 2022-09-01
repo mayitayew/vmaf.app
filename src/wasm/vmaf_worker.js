@@ -36,10 +36,14 @@ onmessage = function (e) {
     const use_neg_model = e.data[3];
 
     ffModule.FS.mount(ffModule.WORKERFS, {files: [reference_file, test_file]}, '/videos');
-    console.log("Mounted files to directory");
-    postMessage([vmafScoresBuffer.getScoreData(), maxScoreReferenceFrameBuffer.getFrameData(), maxScoreDistortedFrameBuffer.getFrameData(), minScoreReferenceFrameBuffer.getFrameData(), minScoreDistortedFrameBuffer.getFrameData()]);
-    ffModule.computeVmaf('/videos/' + reference_file.name, '/videos/' + test_file.name, maxScoreReferenceFrameBuffer.getHeapAddress(), maxScoreDistortedFrameBuffer.getHeapAddress(), minScoreReferenceFrameBuffer.getHeapAddress(), minScoreDistortedFrameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
+    const reference_filepath = '/videos/' + reference_file.name;
+    const test_filepath = '/videos/' + test_file.name;
+    postMessage([vmafScoresBuffer.getScoreData(), maxScoreReferenceFrameBuffer.getFrameData(),
+        maxScoreDistortedFrameBuffer.getFrameData(), minScoreReferenceFrameBuffer.getFrameData(),
+        minScoreDistortedFrameBuffer.getFrameData()]);
+    ffModule.computeVmaf(reference_filepath, test_filepath, maxScoreReferenceFrameBuffer.getHeapAddress(), maxScoreDistortedFrameBuffer.getHeapAddress(), minScoreReferenceFrameBuffer.getHeapAddress(), minScoreDistortedFrameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
         use_phone_model, use_neg_model);
     ffModule.FS.unmount('/videos');
+
     postMessage(["ClearInterval"]);
 }
