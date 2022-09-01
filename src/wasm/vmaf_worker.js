@@ -41,9 +41,26 @@ onmessage = function (e) {
     postMessage([vmafScoresBuffer.getScoreData(), maxScoreReferenceFrameBuffer.getFrameData(),
         maxScoreDistortedFrameBuffer.getFrameData(), minScoreReferenceFrameBuffer.getFrameData(),
         minScoreDistortedFrameBuffer.getFrameData()]);
-    ffModule.computeVmaf(reference_filepath, test_filepath, maxScoreReferenceFrameBuffer.getHeapAddress(), maxScoreDistortedFrameBuffer.getHeapAddress(), minScoreReferenceFrameBuffer.getHeapAddress(), minScoreDistortedFrameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
+    const return_value = ffModule.computeVmaf(reference_filepath, test_filepath, maxScoreReferenceFrameBuffer.getHeapAddress(), maxScoreDistortedFrameBuffer.getHeapAddress(), minScoreReferenceFrameBuffer.getHeapAddress(), minScoreDistortedFrameBuffer.getHeapAddress(), vmafScoresBuffer.getHeapAddress(),
         use_phone_model, use_neg_model);
     ffModule.FS.unmount('/videos');
-
-    postMessage(["ClearInterval"]);
+    switch (return_value) {
+        case -1:
+            postMessage(["Initialization_Error"]);
+            break;
+        case 0:
+            postMessage(["Done"]);
+            break;
+        case 1:
+            postMessage(["Input_Video_Error"]);
+            break;
+        case 2:
+            postMessage(["Cancelled"]);
+            break;
+        case 3:
+            postMessage(["Vmaf_Error"]);
+            break;
+        default:
+            postMessage(["Unknown_Error"]);
+    }
 }
