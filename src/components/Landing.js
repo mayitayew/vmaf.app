@@ -207,7 +207,6 @@ const Inputs = () => {
             showMaxScoreFrames: false,
             showMinScoreFrames: false,
             currentState: "NOT_STARTED", // One of [NOT_STARTED, IN_PROGRESS, DONE]
-            errorMessage: "",
         }
     });
 
@@ -234,21 +233,23 @@ const Inputs = () => {
             workerRef.current = new Worker(new URL('../wasm/vmaf_worker.js', import.meta.url));
             workerRef.current.onmessage = (evt) => {
                 if (typeof evt.data[0] === 'string') {
-                    clearInterval(intervalRef.current);
+                    if (evt.data[0] === "ClearInterval") {
+                        clearInterval(intervalRef.current);
 
-                    // Done case
-                    if (evt.data[0] === "Done") {
                         setState(prevState => {
+                            const newState = prevState.currentState === "IN_PROGRESS" ? "DONE" : "NOT_STARTED";
                             return {
                                 ...prevState,
-                                currentState: "DONE",
+                                currentState: newState,
                             }
+                            console.log("State is ", newState);
                         });
+
                         setOutputsState(prevState => {
-                            const pooledVmafScore = prevState.outputBuffer[4 + prevState.totalNumFrames];
-                            const maxVmafScore = prevState.outputBuffer[5 + prevState.totalNumFrames];
-                            const minVmafScore = prevState.outputBuffer[6 + prevState.totalNumFrames];
-                            const vmafScores = prevState.outputBuffer.slice(4, 4 + prevState.framesProcessed - 2);
+                            const pooledVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[4 + prevState.totalNumFrames];
+                            const maxVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[5 + prevState.totalNumFrames];
+                            const minVmafScore = prevState.outputBuffer === null ? "" : prevState.outputBuffer[6 + prevState.totalNumFrames];
+                            const vmafScores = prevState.outputBuffer === null ? null : prevState.outputBuffer.slice(4, 4 + prevState.framesProcessed - 2);
                             return {
                                 ...prevState,
                                 pooledVmafScore,
@@ -257,42 +258,21 @@ const Inputs = () => {
                                 vmafScores,
                             }
                         })
+
                         return;
                     }
+                    return;
+                }
 
-                    // Cancelled case. Handled on cancel button click.
-                    if (evt.data[0] === "Cancelled") {
-                        return;
-                    }
-
-                    // Errored case
+                setTimeout(() => {
                     setState(prevState => {
                         return {
                             ...prevState,
-                            currentState: "NOT_STARTED",
-                            errorMessage: evt.data[0],
+                            currentState: "IN_PROGRESS"
                         }
-                    });
-
-                    setOutputsState(prevState => {
-                        return {
-                            pooledVmafScore: "",
-                            maxVmafScore: "",
-                            minVmafScore: "",
-                            vmafScores: null,
-                            fps: null,
-                            framesProcessed: null,
-                            totalNumFrames: null,
-                            maxScoreReferenceFrame: null,
-                            maxScoreDistortedFrame: null,
-                            minScoreReferenceFrame: null,
-                            minScoreDistortedFrame: null,
-                            outputBuffer: null,
-                        }
-                    });
-
-                    return;
-                }
+                        console.log("State is ", "IN_PROGRESS");
+                    })
+                }, 500);
 
                 intervalRef.current = setInterval(() => {
 
@@ -332,14 +312,6 @@ const Inputs = () => {
         const use_phone_model = inputsState.vmafModel.includes("Phone");
         const use_neg_model = inputsState.vmafModel.includes("Neg");
         workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
-        setState(prevState => {
-            return {
-                ...prevState,
-                currentState: "IN_PROGRESS",
-                errorMessage: "",
-
-            }
-        });
     }, [state, inputsState])
 
 
@@ -353,6 +325,7 @@ const Inputs = () => {
                 showGraph: false,
                 showMinScoreFrames: false,
             }
+            console.log("State is ", "NOT_STARTED");
         });
 
         setOutputsState(prevState => {
@@ -548,11 +521,9 @@ const Inputs = () => {
             return (
                 <>
                     <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                        Errored: {state.errorMessage}
-                        <br/>
                         Select a reference video, a distorted video, and a VMAF model to get started.
                     </Typography>
-                    <Typography color="secondary" variant="subtitle1" marginTop="3px">
+                    <Typography color="secondary" variant="subtitle1" marginTop="5px">
                         <b>Video formats:</b> mp4, webm and more. <b>Codecs:</b> h264, vp8, vp9 and more. <b>Auto
                         rescaling.</b>
                     </Typography>
@@ -597,8 +568,7 @@ const Inputs = () => {
             return (<FrameCanvas leftFrame={outputsState.maxScoreReferenceFrame}
                                  rightFrame={outputsState.maxScoreReferenceFrame}/>);
         }
-        if (state.currentState === "NOT_STARTED" || outputsState.minScoreReferenceFrame === null
-            || outputsState.minScoreDistortedFrame === null) {
+        if (state.currentState === "NOT_STARTED") {
             return (<FrameCanvas leftFrame={null}
                                  rightFrame={null}/>);
         }
@@ -934,8 +904,7 @@ export default function Landing() {
                             </Grid>
                             <Grid item>
                                 <Typography variant="subtitle1" align="left" style={subtitleStyle}>
-                                    Video encoding tools on browser that improve your video workflow. <b>Get started
-                                    below.</b>
+                                    Video encoding tools on browser that improve your video workflow. <b>Get started below.</b>
                                 </Typography>
                             </Grid>
                             <Grid item>
@@ -968,8 +937,7 @@ export default function Landing() {
                             &nbsp; (coming soon) Native app speeds
                         </Typography>
                         <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            Optimized webassembly makes it possible to run your workflow on browser at the speed of
-                            on-device software.
+                            Optimized webassembly makes it possible to run your workflow on browser at the speed of on-device software.
                         </Typography>
                         {/*<br></br>*/}
                         {/*<Typography variant="h6" color="textPrimary" align="left">*/}
