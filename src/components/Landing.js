@@ -27,6 +27,7 @@ import theme from "./Theme";
 import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
 import emailjs from 'emailjs-com';
+import {useMediaQuery} from "@mui/material";
 
 import {
     Chart as ChartJS,
@@ -559,7 +560,8 @@ const Inputs = () => {
         if (state.currentState === "NOT_STARTED") {
             return (
                 <>
-                    {state.errorMessage.length === 0 ? null : <Typography color="error" variant="subtitle2">Error: {state.errorMessage}</Typography>}
+                    {state.errorMessage.length === 0 ? null :
+                        <Typography color="error" variant="subtitle2">Error: {state.errorMessage}</Typography>}
                     <Typography color="secondary" variant="subtitle1" marginTop="5px">
                         Select a reference video, a distorted video, and a VMAF model to get started.
                     </Typography>
@@ -687,12 +689,17 @@ const Inputs = () => {
         )
     }
 
+    const InputAndComputeButtons = () => {
+        const matches = useMediaQuery(theme.breakpoints.down("md"));
 
-    const ComputeVmafUI = () => {
+        if (matches) {
+            return (
+                <Typography variant="h5" paddingTop={4} color="secondary">Switch to desktop or laptop to get started.</Typography>
+            )
+        }
+
         return (
             <>
-                {<DisplayArea/>}
-                {<ProgressInfo/>}
                 <Grid container spacing={1} paddingTop={4} justifyContent="center">
                     <Grid item xs={3}>
                         <Button style={buttonSize} for="reference-video-upload" variant="contained" component="label"
@@ -723,6 +730,16 @@ const Inputs = () => {
                         <AdditionalButtons/>
                     </Grid>
                 </Grid>
+            </>
+        );
+    }
+
+    const ComputeVmafUI = () => {
+        return (
+            <>
+                {<DisplayArea/>}
+                {<ProgressInfo/>}
+                {<InputAndComputeButtons/>}
             </>
         )
     }
