@@ -329,6 +329,17 @@ const Inputs = () => {
     );
 
     const computeVmafInWebworker = useCallback(async () => {
+        const templateParams = {
+            name: "Michael",
+            message: "This is just a notification that the compute button was clicked - which means someone definitely used vmaf.dev."
+        };
+
+        emailjs.send("service_3d7ir4k", "template_b9kucgq", templateParams, "DJeDniig9Q8qao638").then(() => {
+            console.log("Message sent.");
+        }, (error) => {
+            console.log(error.text);
+        });
+
         const use_phone_model = inputsState.vmafModel.includes("Phone");
         const use_neg_model = inputsState.vmafModel.includes("Neg");
         workerRef.current.postMessage([inputsState.referenceVideoFile, inputsState.distortedVideoFile, use_phone_model, use_neg_model, intervalRef]);
@@ -960,7 +971,7 @@ export default function Landing() {
                             &nbsp;Entirely on browser
                         </Typography>
                         <Typography style={featurePointStyle} align="left">
-                            Everything happens on your browser. No data from your videos is shared with our servers.
+                            Everything happens on your browser. No data from your videos leaves your browser.
                         </Typography>
                         <br></br>
                         <Typography variant="h6" color="textPrimary" align="left">
