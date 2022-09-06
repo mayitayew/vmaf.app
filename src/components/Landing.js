@@ -557,13 +557,40 @@ const Inputs = () => {
     }
 
     const ProgressInfo = () => {
+        const demoButtonStyle = {textTransform: "none", height: "25px"}
+
+        const handleUseDemoVideosClick = () => {
+            fetch("https://vmaf.dev/demo-ref.mp4").then(res => res.blob())
+                .then(blob => {
+                    setInputsState(prevState => {
+                        return {
+                            ...prevState,
+                            referenceVideoFilename: "demo-ref.mp4",
+                            referenceVideoFile: new File([blob], "demo-ref.mp4", {type: "video/mp4"})
+                        }
+                    })
+                });
+
+            fetch("https://vmaf.dev/demo-test.mp4").then(res => res.blob())
+                .then(blob => {
+                    setInputsState(prevState => {
+                        return {
+                            ...prevState,
+                            distortedVideoFilename: "demo-test.mp4",
+                            distortedVideoFile: new File([blob], "demo-test.mp4", {type: "video/mp4"})
+                        }
+                    })
+                });
+        }
+
         if (state.currentState === "NOT_STARTED") {
             return (
                 <>
                     {state.errorMessage.length === 0 ? null :
                         <Typography color="error" variant="subtitle2">Error: {state.errorMessage}</Typography>}
                     <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                        Select a reference video, a distorted video, and a VMAF model to get started.
+                        Select a reference video, a distorted video, and a VMAF model to get started. <Button
+                        variant="contained" style={demoButtonStyle} onClick={handleUseDemoVideosClick}>Use demo videos.</Button>
                     </Typography>
                     <Typography color="secondary" variant="subtitle1" marginTop="3px">
                         <b>Video formats:</b> mp4, webm and more. <b>Codecs:</b> h264, vp8, vp9 and more. <b>Auto
@@ -694,7 +721,8 @@ const Inputs = () => {
 
         if (matches) {
             return (
-                <Typography variant="h5" paddingTop={4} color="secondary">Switch to desktop or laptop to get started.</Typography>
+                <Typography variant="h5" paddingTop={4} color="secondary">Switch to desktop or laptop to get
+                    started.</Typography>
             )
         }
 
@@ -884,7 +912,6 @@ export default function Landing() {
             };
 
             emailjs.send("service_3d7ir4k", "template_b9kucgq", templateParams, "DJeDniig9Q8qao638").then(() => {
-                console.log("Message sent.");
             }, (error) => {
                 console.log(error.text);
             });
@@ -988,8 +1015,16 @@ export default function Landing() {
                             &nbsp;Entirely on browser
                         </Typography>
                         <Typography style={featurePointStyle} align="left">
-                            Everything happens on your browser. No data from your videos leaves your browser.
+                            No data from your videos leaves your browser.
                         </Typography>
+                        {/*<br></br>*/}
+                        {/*<Typography variant="h6" color="textPrimary" align="left">*/}
+                        {/*    <CheckCircleIcon color="secondary" fontSize="small"/>*/}
+                        {/*    &nbsp;Works where your videos are*/}
+                        {/*</Typography>*/}
+                        {/*<Typography style={featurePointStyle} align="left">*/}
+                        {/*    Works with videos on your local machine or on cloud storage like S3.*/}
+                        {/*</Typography>*/}
                         {/*<br></br>*/}
                         {/*<Typography variant="h6" color="textPrimary" align="left">*/}
                         {/*    <RocketLaunchIcon color="comingSoon" fontSize="small"/>*/}
