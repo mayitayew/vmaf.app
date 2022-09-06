@@ -990,15 +990,14 @@ export default function Landing() {
                         <Typography style={featurePointStyle} align="left">
                             Everything happens on your browser. No data from your videos leaves your browser.
                         </Typography>
-                        <br></br>
-                        <Typography variant="h6" color="textPrimary" align="left">
-                            <RocketLaunchIcon color="comingSoon" fontSize="small"/>
-                            &nbsp; (coming soon) Native app speeds
-                        </Typography>
-                        <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            Optimized webassembly makes it possible to run your workflow on browser at the speed of
-                            on-device software.
-                        </Typography>
+                        {/*<br></br>*/}
+                        {/*<Typography variant="h6" color="textPrimary" align="left">*/}
+                        {/*    <RocketLaunchIcon color="comingSoon" fontSize="small"/>*/}
+                        {/*    &nbsp; (coming soon) Native app speeds*/}
+                        {/*</Typography>*/}
+                        {/*<Typography variant="subtitle1" style={featurePointStyle} align="left">*/}
+                        {/*    Run your video workflow on browser at the same speed as on-device software.*/}
+                        {/*</Typography>*/}
                         {/*<br></br>*/}
                         {/*<Typography variant="h6" color="textPrimary" align="left">*/}
                         {/*    <RocketLaunchIcon color="comingSoon" fontSize="small"/>*/}
