@@ -27,6 +27,7 @@ import theme from "./Theme";
 import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
 import emailjs from 'emailjs-com';
+import Link from '@mui/material/Link';
 import {useMediaQuery} from "@mui/material";
 
 import {
@@ -557,7 +558,6 @@ const Inputs = () => {
     }
 
     const ProgressInfo = () => {
-        const demoButtonStyle = {textTransform: "none", height: "25px"}
 
         const handleUseDemoVideosClick = () => {
             fetch("https://vmaf.dev/demo-ref.mp4").then(res => res.blob())
@@ -589,13 +589,14 @@ const Inputs = () => {
                     {state.errorMessage.length === 0 ? null :
                         <Typography color="error" variant="subtitle2">Error: {state.errorMessage}</Typography>}
                     <Typography color="secondary" variant="subtitle1" marginTop="5px">
-                        Select a reference video, a distorted video, and a VMAF model to get started. <Button
-                        variant="contained" style={demoButtonStyle} onClick={handleUseDemoVideosClick}>Use demo videos.</Button>
+                        Select a reference video, a distorted video, and a VMAF model to get started.
                     </Typography>
                     <Typography color="secondary" variant="subtitle1" marginTop="3px">
-                        <b>Video formats:</b> mp4, webm and more. <b>Codecs:</b> h264, vp8, vp9 and more. <b>Auto
-                        rescaling.</b>
+                        <b>Video formats:</b> mp4, webm, mkv and more. <b>Codecs:</b> h264, vp8, vp9 and more.
                     </Typography>
+                    <Typography><Link
+                        variant="subtitle1" color="secondary" component="button" onClick={handleUseDemoVideosClick}>
+                        <b>Click here to try it with demo videos.</b></Link></Typography>
                 </>
             )
         }
@@ -989,7 +990,7 @@ export default function Landing() {
                             </Grid>
                             <Grid item>
                                 <Typography variant="subtitle1" align="left" style={subtitleStyle}>
-                                    Video encoding tools on browser that improve your workflow. <b>Get started
+                                    Video analysis on browser to improve your workflow. <b>Get started
                                     below.</b>
                                 </Typography>
                             </Grid>
