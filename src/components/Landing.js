@@ -860,9 +860,12 @@ export default function Landing() {
         }
 
         return (
-            <Grid container alignItems="baseline" style={footerStyle} spacing={2}>
+            <Grid container alignItems="baseline" style={footerStyle} spacing={2} justifyContent="space-between">
                 <Grid item>
                     <Typography variant="subtitle1" color="secondary">© vmaf.dev 2022</Typography>
+                </Grid>
+                <Grid item>
+                    <Typography><Link variant="subtitle1" color="secondary" href="https://github.com/mayitayew/ffvmaf">View source on Github</Link></Typography>
                 </Grid>
             </Grid>
         );
@@ -985,12 +988,12 @@ export default function Landing() {
                     <Grid item xs={5}>
                         <Grid container direction="column" spacing={2}>
                             <Grid item>
-                                <Typography variant="h4" align="left" style={titleStyle}>Measure video quality from your
+                                <Typography variant="h4" align="left" style={titleStyle}>Video quality analyzer on your
                                     web browser.</Typography>
                             </Grid>
                             <Grid item>
                                 <Typography variant="subtitle1" align="left" style={subtitleStyle}>
-                                    Video analysis on browser to improve your workflow. <b>Get started
+                                    Quickly ensure your videos meet the highest standards. <b>Get started
                                     below.</b>
                                 </Typography>
                             </Grid>
@@ -1013,10 +1016,10 @@ export default function Landing() {
                     <Grid item xs={5} marginTop="1em">
                         <Typography variant="h6" color="textPrimary" align="left">
                             <CheckCircleIcon color="secondary" fontSize="small"/>
-                            &nbsp;Entirely on browser
+                            &nbsp;Entirely on browser.
                         </Typography>
                         <Typography style={featurePointStyle} align="left">
-                            No data from your videos leaves your browser.
+                            No installation required.
                         </Typography>
                         {/*<br></br>*/}
                         {/*<Typography variant="h6" color="textPrimary" align="left">*/}
