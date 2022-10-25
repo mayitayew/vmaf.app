@@ -26,7 +26,6 @@ import InputLabel from '@mui/material/InputLabel';
 import theme from "./Theme";
 import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
-import emailjs from 'emailjs-com';
 import Link from '@mui/material/Link';
 import {useMediaQuery} from "@mui/material";
 
@@ -331,16 +330,6 @@ const Inputs = () => {
     );
 
     const computeVmafInWebworker = useCallback(async () => {
-        const templateParams = {
-            name: "Michael",
-            message: "This is just a notification that the compute button was clicked - which means someone definitely used vmaf.dev."
-        };
-
-        emailjs.send("service_3d7ir4k", "template_b9kucgq", templateParams, "DJeDniig9Q8qao638").then(() => {
-            console.log("Message sent.");
-        }, (error) => {
-            console.log(error.text);
-        });
 
         const use_phone_model = inputsState.vmafModel.includes("Phone");
         const use_neg_model = inputsState.vmafModel.includes("Neg");
@@ -910,15 +899,6 @@ export default function Landing() {
 
         const handleSubmit = () => {
 
-            const templateParams = {
-                name: textInput.name,
-                message: textInput.message
-            };
-
-            emailjs.send("service_3d7ir4k", "template_b9kucgq", templateParams, "DJeDniig9Q8qao638").then(() => {
-            }, (error) => {
-                console.log(error.text);
-            });
             handleClose();
         }
 
