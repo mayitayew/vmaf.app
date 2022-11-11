@@ -999,7 +999,7 @@ export default function Landing() {
                             &nbsp;Entirely on browser.
                         </Typography>
                         <Typography style={featurePointStyle} align="left">
-                            No installation required.
+                            No data is sent and no installation is required.
                         </Typography>
                         {/*<br></br>*/}
                         {/*<Typography variant="h6" color="textPrimary" align="left">*/}
