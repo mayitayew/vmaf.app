@@ -913,25 +913,13 @@ export default function Landing() {
                 </Button>
                 <Dialog open={contactFormOpen} onClose={handleClose}>
                     <DialogTitle>
-                        {"We want to hear from you!"}
+                        {"We want to hear from you."}
                     </DialogTitle>
                     <DialogContent>
                         <DialogContentText>
-                            You can also email us at <b>contact@vmaf.dev</b> with bug reports, feature requests or
+                            Please email us at <b>contact@vmaf.dev</b> with bug reports, feature requests or
                             any comments.
                         </DialogContentText>
-                        <Grid container direction="column" marginTop="5px" spacing={2}>
-                            <Grid item>
-                                <TextField label="Name" required onChange={handleNameChange}/>
-                            </Grid>
-                            <Grid item>
-                                <TextField label="Message" required fullWidth onChange={handleMessageChange}/>
-                            </Grid>
-                            <Grid item>
-                                <Button variant="contained" disabled={!inputsProvided()}
-                                        onClick={handleSubmit}>Submit</Button>
-                            </Grid>
-                        </Grid>
                     </DialogContent>
                 </Dialog>
             </>
