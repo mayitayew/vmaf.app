@@ -28,6 +28,7 @@ import {green, grey} from "@mui/material/colors";
 import Select from '@mui/material/Select';
 import Link from '@mui/material/Link';
 import {useMediaQuery} from "@mui/material";
+import LinearProgress from '@mui/material/LinearProgress';
 
 import {
     Chart as ChartJS,
@@ -643,12 +644,16 @@ const Inputs = () => {
     const ComputeOrCancelButton = () => {
 
         if (state.currentState === "IN_PROGRESS") {
+            const progress = (outputsState.framesProcessed / outputsState.totalNumFrames) * 100;
             return (
-                <Button variant="contained" color="textSecondary"
-                        onClick={handleCancelButtonClick}
-                        style={buttonSize}>
-                    In progress. Click to cancel
-                </Button>
+                <>
+                    <Button variant="contained" color="textSecondary"
+                            onClick={handleCancelButtonClick}
+                            style={buttonSize}>
+                        In progress. Click to cancel
+                    </Button>
+                    <LinearProgress variant="determinate" value={progress} color="secondary" />
+                </>
             )
         }
 
@@ -1002,16 +1007,14 @@ export default function Landing() {
                         {/*<Typography variant="subtitle1" style={featurePointStyle} align="left">*/}
                         {/*    Run your video workflow on browser at the same speed as on-device software.*/}
                         {/*</Typography>*/}
-                        {/*<br></br>*/}
-                        {/*<Typography variant="h6" color="textPrimary" align="left">*/}
-                        {/*    <RocketLaunchIcon color="comingSoon" fontSize="small"/>*/}
-                        {/*    &nbsp; (coming soon) Content-aware encoding ladder*/}
-                        {/*</Typography>*/}
-                        {/*<Typography variant="subtitle1" style={featurePointStyle} align="left">*/}
-                        {/*    Uses machine learning to quickly determine the optimal bitrate for each video and*/}
-                        {/*    resolution.*/}
-                        {/*    No need to do test encodes.*/}
-                        {/*</Typography>*/}
+                        <br></br>
+                        <Typography variant="h6" color="textPrimary" align="left">
+                            <RocketLaunchIcon color="comingSoon" fontSize="small"/>
+                            &nbsp; (coming soon) UVQ support
+                        </Typography>
+                        <Typography variant="subtitle1" style={featurePointStyle} align="left">
+                            UVQ is a reference-free metric developed by YouTube for perceptual video quality assessment. Learn more <a href="https://ai.googleblog.com/2022/08/uvq-measuring-youtubes-perceptual-video.html">here.</a>
+                        </Typography>
                     </Grid>
                 </Grid>
 
