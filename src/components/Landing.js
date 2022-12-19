@@ -1021,7 +1021,7 @@ export default function Landing() {
                             &nbsp; (coming soon) Improved speed
                         </Typography>
                         <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            VMAF-on-browser compute speed that matches the speed installed/native VMAF compute.
+                            VMAF-on-browser compute speed that matches the speed of installed/native VMAF compute.
                         </Typography>
                         <br></br>
                         <Typography variant="h6" color="textPrimary" align="left">
@@ -1029,7 +1029,7 @@ export default function Landing() {
                             &nbsp; (coming soon) UVQ support
                         </Typography>
                         <Typography variant="subtitle1" style={featurePointStyle} align="left">
-                            UVQ is a reference-free metric developed by YouTube for perceptual video quality assessment. Learn more <a href="https://ai.googleblog.com/2022/08/uvq-measuring-youtubes-perceptual-video.html">here.</a>
+                            UVQ is a reference-free metric developed by YouTube for perceptual video quality assessment. Learn more <a href="https://ai.googleblog.com/2022/08/uvq-measuring-youtubes-perceptual-video.html" target="_blank">here.</a>
                         </Typography>
                     </Grid>
                 </Grid>
