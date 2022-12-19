@@ -853,9 +853,6 @@ export default function Landing() {
                 <Grid item>
                     <Typography variant="subtitle1" color="secondary">© vmaf.dev 2022</Typography>
                 </Grid>
-                <Grid item>
-                    <Typography><Link variant="subtitle1" color="secondary" href="https://github.com/mayitayew/ffvmaf">View source on Github</Link></Typography>
-                </Grid>
             </Grid>
         );
     }
