@@ -29,6 +29,7 @@ import Select from '@mui/material/Select';
 import Link from '@mui/material/Link';
 import {useMediaQuery} from "@mui/material";
 import LinearProgress from '@mui/material/LinearProgress';
+import Box from '@mui/material/Box';
 
 import {
     Chart as ChartJS,
@@ -95,6 +96,21 @@ function VmafGraph({vmafScores}) {
         <Container maxWidth="md">
             <Line width="854px" height="360px" options={graphOptions} data={graphData}/>
         </Container>);
+}
+
+function LinearProgressWithLabel(props) {
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ width: '100%', mr: 1 }}>
+                <LinearProgress variant="determinate" {...props} />
+            </Box>
+            <Box sx={{ minWidth: 35 }}>
+                <Typography variant="body2" color="text.secondary">{`${Math.round(
+                    props.value,
+                )}%`}</Typography>
+            </Box>
+        </Box>
+    );
 }
 
 function ElevationScroll(props) {
@@ -644,7 +660,7 @@ const Inputs = () => {
     const ComputeOrCancelButton = () => {
 
         if (state.currentState === "IN_PROGRESS") {
-            const progress = (outputsState.framesProcessed / outputsState.totalNumFrames) * 100;
+            const progress = outputsState.totalNumFrames === null ? 0 : (outputsState.framesProcessed / outputsState.totalNumFrames) * 100;
             return (
                 <>
                     <Button variant="contained" color="textSecondary"
@@ -652,7 +668,7 @@ const Inputs = () => {
                             style={buttonSize}>
                         In progress. Click to cancel
                     </Button>
-                    <LinearProgress variant="determinate" value={progress} color="secondary" />
+                    <LinearProgressWithLabel value={progress} color="secondary" />
                 </>
             )
         }
