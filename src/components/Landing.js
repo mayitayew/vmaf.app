@@ -1015,14 +1015,14 @@ export default function Landing() {
                         {/*<Typography style={featurePointStyle} align="left">*/}
                         {/*    Works with videos on your local machine or on cloud storage like S3.*/}
                         {/*</Typography>*/}
-                        {/*<br></br>*/}
-                        {/*<Typography variant="h6" color="textPrimary" align="left">*/}
-                        {/*    <RocketLaunchIcon color="comingSoon" fontSize="small"/>*/}
-                        {/*    &nbsp; (coming soon) Native app speeds*/}
-                        {/*</Typography>*/}
-                        {/*<Typography variant="subtitle1" style={featurePointStyle} align="left">*/}
-                        {/*    Run your video workflow on browser at the same speed as on-device software.*/}
-                        {/*</Typography>*/}
+                        <br></br>
+                        <Typography variant="h6" color="textPrimary" align="left">
+                            <RocketLaunchIcon color="comingSoon" fontSize="small"/>
+                            &nbsp; (coming soon) Improved speed
+                        </Typography>
+                        <Typography variant="subtitle1" style={featurePointStyle} align="left">
+                            VMAF-on-browser compute speed that matches the speed installed/native VMAF compute.
+                        </Typography>
                         <br></br>
                         <Typography variant="h6" color="textPrimary" align="left">
                             <RocketLaunchIcon color="comingSoon" fontSize="small"/>
