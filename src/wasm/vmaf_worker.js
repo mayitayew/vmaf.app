@@ -58,7 +58,19 @@ onmessage = function (e) {
             postMessage(["Cancelled"]);
             break;
         case 3:
-            postMessage(["Vmaf_Error"]);
+            postMessage(["Vmaf_Error_Copying_Frames"]);
+            break;
+        case 4:
+            postMessage(["Vmaf_Error_Reading_Frames"]);
+            break;
+        case 5:
+            postMessage(["Vmaf_Error_Computing_At_index"]);
+            break;
+        case 6:
+            postMessage(["Vmaf_Error_Flushing_Context"]);
+            break;
+        case 7:
+            postMessage(["Vmaf_Error_Computing_Pooled"]);
             break;
         default:
             postMessage(["Unknown_Error"]);
