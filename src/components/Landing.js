@@ -874,6 +874,9 @@ export default function Landing() {
                 <Grid item>
                     <Typography variant="subtitle1" color="secondary">© vmaf.dev 2022</Typography>
                 </Grid>
+                <Grid item>
+                    <Typography variant="subtitle1" color="secondary">release 0.10</Typography>
+                </Grid>
             </Grid>
         );
     }
