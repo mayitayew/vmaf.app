@@ -872,10 +872,10 @@ export default function Landing() {
         return (
             <Grid container alignItems="baseline" style={footerStyle} spacing={2} justifyContent="space-between">
                 <Grid item>
-                    <Typography variant="subtitle1" color="secondary">© vmaf.dev 2022</Typography>
+                    <Typography variant="subtitle1" color="secondary">© vmaf.dev 2023</Typography>
                 </Grid>
                 <Grid item>
-                    <Typography variant="subtitle1" color="secondary">release 0.10</Typography>
+                    <Typography variant="subtitle1" color="secondary">release 0.11</Typography>
                 </Grid>
             </Grid>
         );
