@@ -6,7 +6,6 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    TextField,
     ThemeProvider,
     Toolbar,
     useScrollTrigger
@@ -815,7 +814,7 @@ export default function Landing() {
 
     const logoStyle = {height: "4em", [theme.breakpoints.down("md")]: {height: "3.4em"}}
 
-    const tabStyle = {minWidth: 10, font: "lato", fontWeight: 450, fontSize: "1.5rem"};
+    const tabStyle = {minWidth: 10, font: "lato", fontWeight: 650, fontSize: "2.5rem"};
 
     const tabListStyle = {marginLeft: "25px", textTransform: "none"};
 
@@ -965,9 +964,6 @@ export default function Landing() {
                 <ElevationScroll>
                     <AppBar position="relative" style={appBarStyle}>
                         <Toolbar disableGutters>
-                            <Button disableRipple style={logoContainer}>
-                                <img src={logo} style={logoStyle} alt={"logo"}/>
-                            </Button>
                             {tabs}
                         </Toolbar>
                     </AppBar>
