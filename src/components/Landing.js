@@ -874,7 +874,7 @@ export default function Landing() {
                     <Typography variant="subtitle1" color="secondary">© vmaf.dev 2023</Typography>
                 </Grid>
                 <Grid item>
-                    <Typography><Link variant="subtitle1" color="secondary" href="https://github.com/mayitayew/vmaf.app">View source on Github</Link></Typography>
+                    <Typography><Link variant="subtitle1" color="secondary" href="https://github.com/neuvideo/vmaf.app">View source on Github</Link></Typography>
                 </Grid>
             </Grid>
         );
